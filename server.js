@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT || 10000;
+const JWT_SECRET = process.env.JWT_SECRET || 'ultrabase_super_secret_key_786';
 
 app.use(cors());
 app.use(express.json());
@@ -14,11 +16,26 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Root API Endpoint
+// Middleware to verify JWT Token (Security Verification)
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Access Token Required' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Invalid or Expired Token' });
+    req.user = user;
+    next();
+  });
+};
+
+// Root API Endpoint - UltraBase Branding & Features Info
 app.get('/', (req, res) => {
   res.json({
-    message: 'Welcome to UltraBase Backend API!',
-    status: 'Online',
+    platform: 'UltraBase Backend Cloud API',
+    status: 'Online & Operational',
+    pricing_tier: 'Ultra Starter (Free 2GB Storage + 100k API Requests)',
+    features: ['JWT Security', 'PostgreSQL Relational DB', 'Fast Global Access'],
     timestamp: new Date()
   });
 });
@@ -41,13 +58,16 @@ app.post('/api/auth/signup', async (req, res) => {
       'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email, created_at',
       [username, email, password]
     );
-    res.status(201).json({ message: 'User created successfully', user: newUser.rows[0] });
+    res.status(201).json({ 
+      message: 'User account created successfully on UltraBase!', 
+      user: newUser.rows[0] 
+    });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-// 2. USER LOGIN API
+// 2. USER LOGIN API (Generates Security JWT Token)
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -61,8 +81,16 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid password' });
     }
 
+    // Generate JWT Token valid for 30 days
+    const token = jwt.sign(
+      { id: user.rows[0].id, email: user.rows[0].email },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
     res.json({
       message: 'Login successful',
+      token: token,
       user: {
         id: user.rows[0].id,
         username: user.rows[0].username,
@@ -74,9 +102,10 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// 3. CREATE POST API (નવી પોસ્ટ ઉમેરવા)
-app.post('/api/posts', async (req, res) => {
-  const { user_id, title, content } = req.body;
+// 3. SECURE CREATE POST API (Protected by Token)
+app.post('/api/posts', authenticateToken, async (req, res) => {
+  const { title, content } = req.body;
+  const user_id = req.user.id;
   try {
     const newPost = await pool.query(
       'INSERT INTO posts (user_id, title, content) VALUES ($1, $2, $3) RETURNING *',
@@ -88,7 +117,7 @@ app.post('/api/posts', async (req, res) => {
   }
 });
 
-// 4. GET ALL POSTS API (બધી પોસ્ટ્સ જોવા)
+// 4. GET ALL POSTS API
 app.get('/api/posts', async (req, res) => {
   try {
     const allPosts = await pool.query(
@@ -100,11 +129,11 @@ app.get('/api/posts', async (req, res) => {
   }
 });
 
-// 5. DELETE POST API (પોસ્ટ ડીલીટ કરવા)
-app.delete('/api/posts/:id', async (req, res) => {
+// 5. SECURE DELETE POST API (Protected by Token)
+app.delete('/api/posts/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM posts WHERE id = $1', [id]);
+    await pool.query('DELETE FROM posts WHERE id = $1 AND user_id = $2', [id, req.user.id]);
     res.json({ message: 'Post deleted successfully' });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
@@ -112,5 +141,5 @@ app.delete('/api/posts/:id', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`UltraBase Server running on port ${port}`);
+  console.log(`UltraBase Production Server running on port ${port}`);
 });
