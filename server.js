@@ -9,13 +9,13 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Line 13-17: Database Connection
+// Database Connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Line 19-38: Database Tables Setup
+// Database Tables Setup
 async function initDB() {
   try {
     await pool.query(`
@@ -40,12 +40,12 @@ async function initDB() {
 }
 initDB();
 
-// Line 40-43: Front-end Dashboard Route
+// Front-end Dashboard Route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Line 45-53: API Status Route
+// API Status Route
 app.get('/api/status', (req, res) => {
   res.json({
     platform: "UltraBase Backend Cloud API",
@@ -55,7 +55,27 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Line 55-75: Login API (Saves user to DB)
+// Admin API: Get All Users
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, created_at FROM users ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching users: " + err.message });
+  }
+});
+
+// Admin API: Get All UTR Submissions
+app.get('/api/admin/utrs', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, utr_number, status, created_at FROM utr_submissions ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching UTRs: " + err.message });
+  }
+});
+
+// Login API (Saves user to DB)
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -78,7 +98,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Line 77-88: UTR Submission API (Saves UTR to DB)
+// UTR Submission API (Saves UTR to DB)
 app.post('/api/utr/submit', async (req, res) => {
   const { email, utr } = req.body;
   if (!utr) {
@@ -93,7 +113,7 @@ app.post('/api/utr/submit', async (req, res) => {
   }
 });
 
-// Line 90-92: Server Listener
+// Server Listener
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
