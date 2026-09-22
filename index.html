@@ -1,160 +1,120 @@
 <!DOCTYPE html>
 <html lang="gu">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UltraBase - Cloud Platform Dashboard</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --accent: #38bdf8;
-      --text: #f8fafc;
-      --subtext: #94a3b8;
-      --green: #22c55e;
-    }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      max-width: 800px;
-      width: 100%;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .header h1 {
-      color: var(--accent);
-      margin-bottom: 5px;
-    }
-    .card {
-      background: var(--card);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
-      border: 1px solid #334155;
-    }
-    .btn {
-      background: var(--accent);
-      color: #000;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
-    }
-    .btn-green {
-      background: var(--green);
-      color: #fff;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #fff;
-      box-sizing: border-box;
-    }
-    .qr-box {
-      text-align: center;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      color: #000;
-      margin-top: 15px;
-    }
-    .upi-id {
-      font-size: 16px;
-      font-weight: bold;
-      background: #f1f5f9;
-      padding: 8px;
-      border-radius: 6px;
-      display: inline-block;
-      margin: 10px 0;
-      color: #0f172a;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UltraBase Admin Dashboard</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+        h1 { color: #38bdf8; margin: 0; font-size: 28px; }
+        .status-card { background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: #22c55e; color: #000; font-weight: bold; padding: 4px 10px; border-radius: 20px; font-size: 14px; }
+        .section { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #334155; }
+        h2 { color: #f43f5e; margin-top: 0; font-size: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; }
+        th, td { padding: 12px; border-bottom: 1px solid #334155; font-size: 14px; }
+        th { background-color: #0f172a; color: #38bdf8; }
+        tr:hover { background-color: #334155; }
+        button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 16px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #0284c7; color: #fff; }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>⚡ UltraBase Live Admin Dashboard</h1>
+            <p style="color: #94a3b8;">તમારા PostgreSQL ડેટાબેઝમાંથી લાઈવ યુઝર્સ અને UTR રેકોર્ડ્સ</p>
+        </header>
 
-<div class="container">
-  <div class="header">
-    <h1>🚀 UltraBase Control Center</h1>
-    <p style="color: var(--subtext)">Scalable Backend-as-a-Service Platform</p>
-  </div>
+        <div class="status-card">
+            <div>
+                <strong>સર્વર સ્ટેટસ:</strong> <span id="server-status">તપાસી રહ્યા છીએ...</span>
+            </div>
+            <button onclick="loadData()">🔄 Refresh Data</button>
+        </div>
 
-  <!-- Auth Section -->
-  <div class="card">
-    <h2>1. ડેવલપર ઓથેન્ટિકેશન (JWT)</h2>
-    <input type="email" id="email" placeholder="તમારું ઈમેલ એડ્રેસ નાખો">
-    <input type="password" id="password" placeholder="પાસવર્ડ">
-    <button class="btn" onclick="loginUser()">Login / Signup</button>
-    <p id="authStatus" style="color: var(--subtext); margin-top: 10px;"></p>
-  </div>
+        <div class="section">
+            <h2>👥 Registered Users (<span id="user-count">0</span>)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Created At</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table">
+                    <tr><td colspan="3">ડેટા લોડ થઈ રહ્યો છે...</td></tr>
+                </tbody>
+            </table>
+        </div>
 
-  <!-- Plan Upgrade Section (Direct UPI) -->
-  <div class="card">
-    <h2>2. Upgrade to Pro (0% Commission Direct Payment)</h2>
-    <p>અનલિમિટેડ ડેટાબેઝ સ્ટોરેજ અને API એક્સેસ માટે ડાયરેક્ટ UPI થી પેમેન્ટ કરો:</p>
-    
-    <div class="qr-box">
-      <h3 style="margin-top: 0;">Pay via Any UPI App</h3>
-      <p style="color: #475569; margin: 5px 0;">Google Pay / PhonePe / Paytm / BHIM</p>
-      <div class="upi-id">UPI ID: 9924787248@ptsbi</div>
+        <div class="section">
+            <h2>💳 UTR Submissions (<span id="utr-count">0</span>)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User Email</th>
+                        <th>UTR Number</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="utr-table">
+                    <tr><td colspan="5">ડેટા લોડ થઈ રહ્યો છે...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <input type="text" id="utr" placeholder="પેમેન્ટ કર્યા પછી 12-ડિજિટ Transaction UTR No. અહીં નાખો">
-    <button class="btn btn-green" onclick="submitUPI()">Submit UTR for Pro Plan</button>
-  </div>
-</div>
+    <script>
+        async function loadData() {
+            try {
+                // Fetch API Status
+                const statusRes = await fetch('/api/status');
+                const statusData = await statusRes.json();
+                document.getElementById('server-status').innerHTML = `<span class="badge">${statusData.status}</span>`;
 
-<script>
-  const BACKEND_URL = "https://ultrabase-backend.onrender.com";
+                // Fetch Users
+                const usersRes = await fetch('/api/admin/users');
+                const users = await usersRes.json();
+                document.getElementById('user-count').innerText = users.length;
+                let userHtml = '';
+                if(users.length === 0) {
+                    userHtml = '<tr><td colspan="3">હજુ સુધી કોઈ યુઝર નોંધાયેલ નથી.</td></tr>';
+                } else {
+                    users.forEach(u => {
+                        userHtml += `<tr><td>${u.id}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`;
+                    });
+                }
+                document.getElementById('users-table').innerHTML = userHtml;
 
-  async function loginUser() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const statusText = document.getElementById('authStatus');
-    
-    if(!email || !password) return alert("ઈમેલ અને પાસવર્ડ બંને નાખો");
-    statusText.innerText = "કનેક્ટ થઈ રહ્યું છે...";
+                // Fetch UTRs
+                const utrRes = await fetch('/api/admin/utrs');
+                const utrs = await utrRes.json();
+                document.getElementById('utr-count').innerText = utrs.length;
+                let utrHtml = '';
+                if(utrs.length === 0) {
+                    utrHtml = '<tr><td colspan="5">હજુ સુધી કોઈ UTR સબમિટ થયેલ નથી.</td></tr>';
+                } else {
+                    utrs.forEach(utr => {
+                        utrHtml += `<tr><td>${utr.id}</td><td>${utr.email}</td><td><strong>${utr.utr_number}</strong></td><td><span style="color:#22c55e;">${utr.status}</span></td><td>${new Date(utr.created_at).toLocaleString()}</td></tr>`;
+                    });
+                }
+                document.getElementById('utr-table').innerHTML = utrHtml;
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      
-      if(res.ok) {
-        statusText.innerText = "સફળતાપૂર્વક કનેક્ટ થઈ ગયું! JWT Token પ્રાપ્ત થયું.";
-        localStorage.setItem("ultra_token", data.token);
-      } else {
-        statusText.innerText = "ભૂલ: " + (data.message || "લોગિન ન થઈ શક્યું");
-      }
-    } catch (err) {
-      statusText.innerText = "સર્વર સાથે કનેક્ટ ન થઈ શક્યું.";
-    }
-  }
+            } catch (err) {
+                console.error("Error loading dashboard data:", err);
+                document.getElementById('server-status').innerText = 'Error Connecting to Server';
+            }
+        }
 
-  function submitUPI() {
-    const utr = document.getElementById('utr').value;
-    if(!utr) return alert("કૃપા કરીને UTR નંબર નાખો");
-    alert("તમારો UTR નંબર " + utr + " પ્રાપ્ત થયો છે! ચકાસણી પછી તમારો Pro Plan સક્રિય થશે.");
-  }
-</script>
-
+        // Auto load on page start
+        loadData();
+    </script>
 </body>
 </html>
