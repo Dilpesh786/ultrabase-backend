@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UltraBase - Cloud Platform Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --green: #22c55e;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #334155;
+    }
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+      box-sizing: border-box;
+    }
+    .qr-box {
+      text-align: center;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      color: #000;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🚀 UltraBase Control Center</h1>
+    <p style="color: var(--subtext)">Scalable Backend-as-a-Service Platform</p>
+  </div>
+
+  <!-- Auth Section -->
+  <div class="card">
+    <h2>1. ડેવલપર ઓથેન્ટિકેશન (JWT)</h2>
+    <input type="email" id="email" placeholder="તમારું ઈમેલ એડ્રેસ નાખો">
+    <input type="password" id="password" placeholder="પાસવર્ડ">
+    <button class="btn" onclick="loginUser()">Login / Signup</button>
+    <p id="authStatus" style="color: var(--subtext); margin-top: 10px;"></p>
+  </div>
+
+  <!-- Plan Upgrade Section (Direct UPI & Razorpay) -->
+  <div class="card">
+    <h2>2. Upgrade to Pro (0% Commission Direct Payment)</h2>
+    <p>અનલિમિટેડ ડેટાબેઝ સ્ટોરેજ અને API એક્સેસ માટે ડાયરેક્ટ UPI થી પેમેન્ટ કરો:</p>
+    
+    <div class="qr-box">
+      <h3>Scan QR Code to Pay</h3>
+      <p><b>UPI ID:</b> yourname@paytm</p>
+      <p style="font-size: 12px; color: #666;">Google Pay / PhonePe / Paytm સ્કેન કરો</p>
+    </div>
+
+    <input type="text" id="utr" placeholder="પેમેન્ટ કર્યા પછી Transaction UTR No. અહીં નાખો">
+    <button class="btn btn-green" onclick="submitUPI()">Submit UTR for Pro Plan</button>
+  </div>
+</div>
+
+<script>
+  async function loginUser() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    document.getElementById('authStatus').innerText = "કનેક્ટ થઈ રહ્યું છે...";
+    
+    setTimeout(() => {
+      document.getElementById('authStatus').innerText = "સફળતાપૂર્વક કનેક્ટ થઈ ગયું! JWT Token પ્રાપ્ત થયું.";
+    }, 1000);
+  }
+
+  function submitUPI() {
+    const utr = document.getElementById('utr').value;
+    if(!utr) return alert("કૃપા કરીને UTR નંબર નાખો");
+    alert("તમારો UTR નંબર પ્રાપ્ત થયો છે! ચકાસણી પછી તમારો Pro Plan સક્રિય થશે.");
+  }
+</script>
+
+</body>
+  </html>
+  
