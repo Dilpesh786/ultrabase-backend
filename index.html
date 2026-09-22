@@ -69,10 +69,20 @@
     .qr-box {
       text-align: center;
       background: #fff;
-      padding: 15px;
+      padding: 20px;
       border-radius: 8px;
       color: #000;
       margin-top: 15px;
+    }
+    .upi-id {
+      font-size: 16px;
+      font-weight: bold;
+      background: #f1f5f9;
+      padding: 8px;
+      border-radius: 6px;
+      display: inline-block;
+      margin: 10px 0;
+      color: #0f172a;
     }
   </style>
 </head>
@@ -93,40 +103,58 @@
     <p id="authStatus" style="color: var(--subtext); margin-top: 10px;"></p>
   </div>
 
-  <!-- Plan Upgrade Section (Direct UPI & Razorpay) -->
+  <!-- Plan Upgrade Section (Direct UPI) -->
   <div class="card">
     <h2>2. Upgrade to Pro (0% Commission Direct Payment)</h2>
     <p>અનલિમિટેડ ડેટાબેઝ સ્ટોરેજ અને API એક્સેસ માટે ડાયરેક્ટ UPI થી પેમેન્ટ કરો:</p>
     
     <div class="qr-box">
-      <h3>Scan QR Code to Pay</h3>
-      <p><b>UPI ID:</b> yourname@paytm</p>
-      <p style="font-size: 12px; color: #666;">Google Pay / PhonePe / Paytm સ્કેન કરો</p>
+      <h3 style="margin-top: 0;">Pay via Any UPI App</h3>
+      <p style="color: #475569; margin: 5px 0;">Google Pay / PhonePe / Paytm / BHIM</p>
+      <div class="upi-id">UPI ID: 9924787248@ptsbi</div>
     </div>
 
-    <input type="text" id="utr" placeholder="પેમેન્ટ કર્યા પછી Transaction UTR No. અહીં નાખો">
+    <input type="text" id="utr" placeholder="પેમેન્ટ કર્યા પછી 12-ડિજિટ Transaction UTR No. અહીં નાખો">
     <button class="btn btn-green" onclick="submitUPI()">Submit UTR for Pro Plan</button>
   </div>
 </div>
 
 <script>
+  const BACKEND_URL = "https://ultrabase-backend.onrender.com";
+
   async function loginUser() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    document.getElementById('authStatus').innerText = "કનેક્ટ થઈ રહ્યું છે...";
+    const statusText = document.getElementById('authStatus');
     
-    setTimeout(() => {
-      document.getElementById('authStatus').innerText = "સફળતાપૂર્વક કનેક્ટ થઈ ગયું! JWT Token પ્રાપ્ત થયું.";
-    }, 1000);
+    if(!email || !password) return alert("ઈમેલ અને પાસવર્ડ બંને નાખો");
+    statusText.innerText = "કનેક્ટ થઈ રહ્યું છે...";
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      
+      if(res.ok) {
+        statusText.innerText = "સફળતાપૂર્વક કનેક્ટ થઈ ગયું! JWT Token પ્રાપ્ત થયું.";
+        localStorage.setItem("ultra_token", data.token);
+      } else {
+        statusText.innerText = "ભૂલ: " + (data.message || "લોગિન ન થઈ શક્યું");
+      }
+    } catch (err) {
+      statusText.innerText = "સર્વર સાથે કનેક્ટ ન થઈ શક્યું.";
+    }
   }
 
   function submitUPI() {
     const utr = document.getElementById('utr').value;
     if(!utr) return alert("કૃપા કરીને UTR નંબર નાખો");
-    alert("તમારો UTR નંબર પ્રાપ્ત થયો છે! ચકાસણી પછી તમારો Pro Plan સક્રિય થશે.");
+    alert("તમારો UTR નંબર " + utr + " પ્રાપ્ત થયો છે! ચકાસણી પછી તમારો Pro Plan સક્રિય થશે.");
   }
 </script>
 
 </body>
-  </html>
-  
+</html>
