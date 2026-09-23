@@ -5,116 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UltraBase Admin Dashboard</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
-        h1 { color: #38bdf8; margin: 0; font-size: 28px; }
-        .status-card { background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-        .badge { background: #22c55e; color: #000; font-weight: bold; padding: 4px 10px; border-radius: 20px; font-size: 14px; }
-        .section { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #334155; }
-        h2 { color: #f43f5e; margin-top: 0; font-size: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; }
-        th, td { padding: 12px; border-bottom: 1px solid #334155; font-size: 14px; }
-        th { background-color: #0f172a; color: #38bdf8; }
+        h1 { color: #38bdf8; font-size: 26px; margin-bottom: 8px; }
+        .status-badge { display: inline-block; padding: 6px 12px; background-color: #22c55e; color: #000; font-weight: bold; border-radius: 20px; font-size: 14px; }
+        .card { background-color: #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .card-title { color: #f43f5e; font-size: 18px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid #334155; }
+        th { background-color: #0f172a; color: #94a3b8; }
         tr:hover { background-color: #334155; }
-        button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 16px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #0284c7; color: #fff; }
+        .btn { background-color: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { opacity: 0.8; }
+        .btn-approve { background-color: #22c55e; color: white; padding: 4px 8px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; margin-right: 4px; }
+        .btn-reject { background-color: #f59e0b; color: white; padding: 4px 8px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; margin-right: 4px; }
+        .btn-delete { background-color: #ef4444; color: white; padding: 4px 8px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; }
+        .status-Approved { color: #22c55e; font-weight: bold; }
+        .status-Rejected { color: #ef4444; font-weight: bold; }
+        .status-Pending { color: #f59e0b; font-weight: bold; }
+        .empty-text { text-align: center; color: #94a3b8; padding: 15px 0; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>⚡ UltraBase Live Admin Dashboard</h1>
-            <p style="color: #94a3b8;">તમારા PostgreSQL ડેટાબેઝમાંથી લાઈવ યુઝર્સ અને UTR રેકોર્ડ્સ</p>
-        </header>
 
-        <div class="status-card">
-            <div>
-                <strong>સર્વર સ્ટેટસ:</strong> <span id="server-status">તપાસી રહ્યા છીએ...</span>
-            </div>
-            <button onclick="loadData()">🔄 Refresh Data</button>
-        </div>
+<div class="container">
+    <header>
+        <h1>⚡ UltraBase Live Admin Dashboard</h1>
+        <p>તમારા PostgreSQL ડેટાબેઝમાંથી લાઈવ યુઝર્સ અને UTR રેકોર્ડ્સ</p>
+    </header>
 
-        <div class="section">
-            <h2>👥 Registered Users (<span id="user-count">0</span>)</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Email</th>
-                        <th>Created At</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table">
-                    <tr><td colspan="3">ડેટા લોડ થઈ રહ્યો છે...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="section">
-            <h2>💳 UTR Submissions (<span id="utr-count">0</span>)</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>User Email</th>
-                        <th>UTR Number</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody id="utr-table">
-                    <tr><td colspan="5">ડેટા લોડ થઈ રહ્યો છે...</td></tr>
-                </tbody>
-            </table>
+    <div class="card">
+        <div class="card-header">
+            <div>સર્વર સ્ટેટસ: <span class="status-badge">Online & Operational</span></div>
+            <button class="btn" onclick="fetchData()">🔄 Refresh Data</button>
         </div>
     </div>
 
-    <script>
-        async function loadData() {
-            try {
-                // Fetch API Status
-                const statusRes = await fetch('/api/status');
-                const statusData = await statusRes.json();
-                document.getElementById('server-status').innerHTML = `<span class="badge">${statusData.status}</span>`;
+    <!-- USERS TABLE -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">👥 Registered Users (<span id="user-count">0</span>)</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Created At</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                <tr><td colspan="4" class="empty-text">લોડ થઈ રહ્યું છે...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-                // Fetch Users
-                const usersRes = await fetch('/api/admin/users');
-                const users = await usersRes.json();
-                document.getElementById('user-count').innerText = users.length;
-                let userHtml = '';
-                if(users.length === 0) {
-                    userHtml = '<tr><td colspan="3">હજુ સુધી કોઈ યુઝર નોંધાયેલ નથી.</td></tr>';
+    <!-- UTR TABLE -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">💳 UTR Submissions (<span id="utr-count">0</span>)</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User Email</th>
+                    <th>UTR Number</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="utr-table-body">
+                <tr><td colspan="5" class="empty-text">લોડ થઈ રહ્યું છે...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function fetchData() {
+        try {
+            const response = await fetch('/api/admin/all-data');
+            const data = await response.json();
+
+            if (data.success) {
+                // Render Users
+                const userBody = document.getElementById('users-table-body');
+                document.getElementById('user-count').innerText = data.users.length;
+                if (data.users.length === 0) {
+                    userBody.innerHTML = '<tr><td colspan="4" class="empty-text">હજુ સુધી કોઈ યુઝર નોંધાયેલ નથી.</td></tr>';
                 } else {
-                    users.forEach(u => {
-                        userHtml += `<tr><td>${u.id}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`;
-                    });
+                    userBody.innerHTML = data.users.map(u => `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${u.email}</td>
+                            <td>${new Date(u.created_at).toLocaleString('gu-IN')}</td>
+                            <td>
+                                <button class="btn-delete" onclick="deleteUser(${u.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('');
                 }
-                document.getElementById('users-table').innerHTML = userHtml;
 
-                // Fetch UTRs
-                const utrRes = await fetch('/api/admin/utrs');
-                const utrs = await utrRes.json();
-                document.getElementById('utr-count').innerText = utrs.length;
-                let utrHtml = '';
-                if(utrs.length === 0) {
-                    utrHtml = '<tr><td colspan="5">હજુ સુધી કોઈ UTR સબમિટ થયેલ નથી.</td></tr>';
+                // Render UTRs
+                const utrBody = document.getElementById('utr-table-body');
+                document.getElementById('utr-count').innerText = data.utrs.length;
+                if (data.utrs.length === 0) {
+                    utrBody.innerHTML = '<tr><td colspan="5" class="empty-text">હજુ સુધી કોઈ UTR સબમિટ થયેલ નથી.</td></tr>';
                 } else {
-                    utrs.forEach(utr => {
-                        utrHtml += `<tr><td>${utr.id}</td><td>${utr.email}</td><td><strong>${utr.utr_number}</strong></td><td><span style="color:#22c55e;">${utr.status}</span></td><td>${new Date(utr.created_at).toLocaleString()}</td></tr>`;
-                    });
+                    utrBody.innerHTML = data.utrs.map(u => `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${u.user_email}</td>
+                            <td>${u.utr_number}</td>
+                            <td class="status-${u.status}">${u.status}</td>
+                            <td>
+                                <button class="btn-approve" onclick="updateStatus(${u.id}, 'Approved')">Approve</button>
+                                <button class="btn-reject" onclick="updateStatus(${u.id}, 'Rejected')">Reject</button>
+                                <button class="btn-delete" onclick="deleteUtr(${u.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('');
                 }
-                document.getElementById('utr-table').innerHTML = utrHtml;
-
-            } catch (err) {
-                console.error("Error loading dashboard data:", err);
-                document.getElementById('server-status').innerText = 'Error Connecting to Server';
             }
+        } catch (err) {
+            console.error('Error fetching data:', err);
         }
+    }
 
-        // Auto load on page start
-        loadData();
-    </script>
+    async function updateStatus(id, status) {
+        await fetch('/api/admin/update-utr-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status })
+        });
+        fetchData();
+    }
+
+    async function deleteUser(id) {
+        if (confirm('શું તમે આ યુઝરને ડિલીટ કરવા માંગો છો?')) {
+            await fetch(`/api/admin/delete-user/${id}`, { method: 'DELETE' });
+            fetchData();
+        }
+    }
+
+    async function deleteUtr(id) {
+        if (confirm('શું તમે આ UTR રેકોર્ડ ડિલીટ કરવા માંગો છો?')) {
+            await fetch(`/api/admin/delete-utr/${id}`, { method: 'DELETE' });
+            fetchData();
+        }
+    }
+
+    fetchData();
+</script>
+
 </body>
 </html>
