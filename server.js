@@ -1,242 +1,162 @@
 const express = require('express');
-const { Pool } = require('pg');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.')); 
-app.use('/uploads', express.static('uploads')); // Uploaded files access link
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ultrabase_super_secret_key_123';
-
-// Storage configuration for Multer
+// Ensure uploads folder exists
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+    fs.mkdirSync(uploadDir);
 }
 
+// Multer Storage Configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
 });
 const upload = multer({ storage });
 
-// PostgreSQL Database Connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+// In-Memory Database Engine
+const db = {
+    users: [
+        { id: 1, email: 'admin@ultrabase.io', role: 'admin', createdAt: new Date().toISOString() }
+    ],
+    tables: {
+        'utr_payments': [
+            { id: 1, email: 'user@example.com', utr: 'UTR123456789', status: 'approved', timestamp: new Date().toISOString() }
+        ]
+    },
+    files: []
+};
+
+// Serving Frontend UI
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Initialize Database Tables
-async function initDb() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+// --- API ENDPOINTS ---
 
-      CREATE TABLE IF NOT EXISTS utr_submissions (
-        id SERIAL PRIMARY KEY,
-        user_email VARCHAR(255) NOT NULL,
-        utr_number VARCHAR(100) NOT NULL,
-        status VARCHAR(50) DEFAULT 'Pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS files (
-        id SERIAL PRIMARY KEY,
-        filename VARCHAR(255) NOT NULL,
-        file_url VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    console.log('Database tables initialized with File Storage support!');
-  } catch (err) {
-    console.error('Error initializing database:', err);
-  }
-}
-
-initDb();
-
-// 1. REGISTER USER
-app.post('/api/register', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'ઈમેલ અને પાસવર્ડ બંને જરૂરી છે.' });
-  }
-
-  try {
-    const userExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (userExist.rows.length > 0) {
-      return res.status(400).json({ success: false, message: 'આ ઈમેલ પહેલેથી નોંધાયેલ છે.' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = await pool.query(
-      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email, created_at',
-      [email, hashedPassword]
-    );
-
-    const token = jwt.sign({ id: newUser.rows[0].id, email: newUser.rows[0].email }, JWT_SECRET, { expiresIn: '7d' });
-
+// 1. Stats Overview
+app.get('/api/stats', (req, res) => {
+    let totalRecords = 0;
+    Object.keys(db.tables).forEach(t => totalRecords += db.tables[t].length);
     res.json({
-      success: true,
-      message: 'યુઝર સફળતાપૂર્વક રજીસ્ટર થયો!',
-      token,
-      user: newUser.rows[0]
+        totalUsers: db.users.length,
+        totalTables: Object.keys(db.tables).length,
+        totalRecords: totalRecords,
+        totalFiles: db.files.length,
+        systemStatus: 'Active & Operational'
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'સર્વર એરર આવી.' });
-  }
 });
 
-// 2. LOGIN USER
-app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'ઈમેલ અને પાસવર્ડ જરૂરી છે.' });
-  }
+// 2. Auth Endpoints
+app.get('/api/auth/users', (req, res) => res.json(db.users));
 
-  try {
-    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (userResult.rows.length === 0) {
-      return res.status(400).json({ success: false, message: 'ઈમેલ અથવા પાસવર્ડ ખોટો છે.' });
+app.post('/api/auth/register', (req, res) => {
+    const { email, role } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    
+    const newUser = {
+        id: db.users.length + 1,
+        email,
+        role: role || 'user',
+        createdAt: new Date().toISOString()
+    };
+    db.users.push(newUser);
+    res.status(201).json({ message: 'User created successfully', user: newUser });
+});
+
+app.delete('/api/auth/users/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    db.users = db.users.filter(u => u.id !== id);
+    res.json({ message: 'User deleted successfully' });
+});
+
+// 3. Dynamic Database / Collection Endpoints
+app.get('/api/db/tables', (req, res) => {
+    res.json(Object.keys(db.tables));
+});
+
+app.post('/api/db/create-table', (req, res) => {
+    const { tableName } = req.body;
+    if (!tableName) return res.status(400).json({ error: 'Table name is required' });
+    const formattedName = tableName.toLowerCase().replace(/\s+/g, '_');
+    if (!db.tables[formattedName]) {
+        db.tables[formattedName] = [];
     }
+    res.json({ message: `Table '${formattedName}' created`, tables: Object.keys(db.tables) });
+});
 
-    const user = userResult.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'ઈમેલ અથવા પાસવર્ડ ખોટો છે.' });
+app.get('/api/db/data/:tableName', (req, res) => {
+    const tableName = req.params.tableName;
+    if (!db.tables[tableName]) return res.status(404).json({ error: 'Table not found' });
+    res.json(db.tables[tableName]);
+});
+
+app.post('/api/db/data/:tableName', (req, res) => {
+    const tableName = req.params.tableName;
+    if (!db.tables[tableName]) db.tables[tableName] = [];
+    
+    const newRecord = {
+        id: db.tables[tableName].length + 1,
+        ...req.body,
+        timestamp: new Date().toISOString()
+    };
+    db.tables[tableName].push(newRecord);
+    res.status(201).json({ message: 'Record inserted', record: newRecord });
+});
+
+app.delete('/api/db/data/:tableName/:id', (req, res) => {
+    const { tableName, id } = req.params;
+    if (!db.tables[tableName]) return res.status(404).json({ error: 'Table not found' });
+    db.tables[tableName] = db.tables[tableName].filter(item => item.id !== parseInt(id));
+    res.json({ message: 'Record deleted' });
+});
+
+// 4. Storage Bucket Endpoints
+app.get('/api/storage/files', (req, res) => res.json(db.files));
+
+app.post('/api/storage/upload', upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    
+    const fileData = {
+        id: db.files.length + 1,
+        originalname: req.file.originalname,
+        filename: req.file.filename,
+        size: (req.file.size / 1024).toFixed(2) + ' KB',
+        url: `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`,
+        uploadedAt: new Date().toISOString()
+    };
+    db.files.push(fileData);
+    res.json({ message: 'File uploaded successfully', file: fileData });
+});
+
+app.delete('/api/storage/files/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const file = db.files.find(f => f.id === id);
+    if (file) {
+        const filePath = path.join(__dirname, 'uploads', file.filename);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        db.files = db.files.filter(f => f.id !== id);
     }
-
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-
-    res.json({
-      success: true,
-      message: 'લોગિન સફળ રહ્યું!',
-      token,
-      user: { id: user.id, email: user.email, created_at: user.created_at }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'સર્વર એરર આવી.' });
-  }
+    res.json({ message: 'File deleted' });
 });
 
-// 3. SUBMIT UTR
-app.post('/api/submit-utr', async (req, res) => {
-  const { email, utr } = req.body;
-  if (!email || !utr) {
-    return res.status(400).json({ success: false, message: 'ઈમેલ અને UTR નંબર બંને જરૂરી છે.' });
-  }
-
-  try {
-    const result = await pool.query(
-      'INSERT INTO utr_submissions (user_email, utr_number) VALUES ($1, $2) RETURNING *',
-      [email, utr]
-    );
-    res.json({ success: true, message: 'UTR સફળતાપૂર્વક સબમિટ થયો!', data: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'સર્વર એરર આવી.' });
-  }
-});
-
-// 4. FILE UPLOAD API
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'કોઈ ફાઈલ પસંદ કરી નથી.' });
-  }
-
-  const fileUrl = `/uploads/${req.file.filename}`;
-  try {
-    const result = await pool.query(
-      'INSERT INTO files (filename, file_url) VALUES ($1, $2) RETURNING *',
-      [req.file.originalname, fileUrl]
-    );
-    res.json({ success: true, message: 'ફાઈલ અપલોડ થઈ ગઈ!', file: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'ફાઈલ સેવ કરવામાં એરર આવી.' });
-  }
-});
-
-// 5. ADMIN API - GET ALL DATA
-app.get('/api/admin/all-data', async (req, res) => {
-  try {
-    const users = await pool.query('SELECT id, email, created_at FROM users ORDER BY id DESC');
-    const utrs = await pool.query('SELECT * FROM utr_submissions ORDER BY id DESC');
-    const files = await pool.query('SELECT * FROM files ORDER BY id DESC');
-
-    res.json({
-      success: true,
-      users: users.rows,
-      utrs: utrs.rows,
-      files: files.rows
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'ડેટા ફેચ કરવામાં એરર આવી.' });
-  }
-});
-
-// 6. ADMIN CONTROL - UPDATE UTR STATUS
-app.post('/api/admin/update-utr-status', async (req, res) => {
-  const { id, status } = req.body;
-  if (!id || !status) {
-    return res.status(400).json({ success: false, message: 'ID અને Status જરૂરી છે.' });
-  }
-
-  try {
-    await pool.query('UPDATE utr_submissions SET status = $1 WHERE id = $2', [status, id]);
-    res.json({ success: true, message: `UTR સ્ટેટસ બદલાઈને ${status} થઈ ગયું છે.` });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'સ્ટેટસ અપડેટ કરવામાં એરર આવી.' });
-  }
-});
-
-// 7. ADMIN CONTROL - DELETE USER
-app.delete('/api/admin/delete-user/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    await pool.query('DELETE FROM users WHERE id = $1', [id]);
-    res.json({ success: true, message: 'યુઝર ડિલીટ થઈ ગયો છે.' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'યુઝર ડિલીટ કરવામાં એરર આવી.' });
-  }
-});
-
-// 8. ADMIN CONTROL - DELETE UTR
-app.delete('/api/admin/delete-utr/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    await pool.query('DELETE FROM utr_submissions WHERE id = $1', [id]);
-    res.json({ success: true, message: 'UTR રેકોર્ડ ડિલીટ થઈ ગયો છે.' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'UTR ડિલીટ કરવામાં એરર આવી.' });
-  }
-});
-
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`UltraBase Server active on port ${PORT}`);
 });
