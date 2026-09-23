@@ -25,14 +25,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// In-Memory Database Store (For Demo & Fast Operations)
+// Clean In-Memory Store (No Dummy Data - Zero Initialized)
 const db = {
-    apiKeys: [{ id: 1, name: 'Default Admin Key', key: 'ub_live_secret_key_786', createdAt: new Date() }],
-    users: [{ id: 1, email: 'admin@ultrabase.io', role: 'admin', password: 'adminpassword', createdAt: new Date() }],
-    tables: {
-        'products': [{ id: 1, name: 'Sample Item', price: 100 }],
-        'utr_payments': []
-    },
+    apiKeys: [],
+    users: [],
+    tables: {},
     files: []
 };
 
@@ -65,8 +62,8 @@ app.post('/api/keys/generate', (req, res) => {
     const { name } = req.body;
     const newKey = {
         id: Date.now(),
-        name: name || 'API Key',
-        key: 'ub_key_' + Math.random().toString(36).substring(2, 12),
+        name: name || 'Default API Key',
+        key: 'ub_live_' + Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12),
         createdAt: new Date()
     };
     db.apiKeys.push(newKey);
@@ -84,7 +81,6 @@ app.delete('/api/keys/:id', (req, res) => {
 // ==========================================
 app.get('/api/auth/users', (req, res) => res.json(db.users));
 
-// Register User (Simple Role Based)
 app.post('/api/auth/register', (req, res) => {
     const { email, role } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
@@ -94,7 +90,6 @@ app.post('/api/auth/register', (req, res) => {
     res.status(201).json(newUser);
 });
 
-// Sign Up with Email & Password
 app.post('/api/auth/signup', (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -107,7 +102,6 @@ app.post('/api/auth/signup', (req, res) => {
     res.status(201).json({ message: 'User registered successfully', user: { id: newUser.id, email: newUser.email } });
 });
 
-// Log In with Email & Password
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
     const user = db.users.find(u => u.email === email && u.password === password);
@@ -183,7 +177,7 @@ app.delete('/api/storage/files/:id', (req, res) => {
     res.json({ message: 'File record deleted' });
 });
 
-// Dynamic Dashboard UI Serve
+// Serve Frontend Dashboard UI
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -192,4 +186,3 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 UltraBase Server Running on Port ${PORT}`);
 });
-  
