@@ -6,6 +6,37 @@ class UltraBaseClient {
   constructor(baseUrl, apiKey = '') {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
+
+    // Dedicated Auth Module
+    this.auth = {
+      // Sign Up with Email and Password
+      signUp: async (email, password) => {
+        try {
+          const response = await fetch(`${this.baseUrl}/api/auth/signup`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ email, password })
+          });
+          return await response.json();
+        } catch (error) {
+          return { success: false, message: error.message };
+        }
+      },
+
+      // Log In with Email and Password
+      logIn: async (email, password) => {
+        try {
+          const response = await fetch(`${this.baseUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ email, password })
+          });
+          return await response.json();
+        } catch (error) {
+          return { success: false, message: error.message };
+        }
+      }
+    };
   }
 
   // Helper method for headers
@@ -30,7 +61,7 @@ class UltraBaseClient {
     }
   }
 
-  // 1. User Register
+  // Quick Register User (By Email & Role)
   async register(email, role = 'user') {
     try {
       const response = await fetch(`${this.baseUrl}/api/auth/register`, {
@@ -44,7 +75,7 @@ class UltraBaseClient {
     }
   }
 
-  // 2. Insert Data into Dynamic Table
+  // Insert Data into Dynamic Table
   async insertData(tableName, data) {
     try {
       const response = await fetch(`${this.baseUrl}/api/db/data/${tableName}`, {
@@ -58,7 +89,7 @@ class UltraBaseClient {
     }
   }
 
-  // 3. Get Data from Dynamic Table
+  // Get Data from Dynamic Table
   async getData(tableName) {
     try {
       const response = await fetch(`${this.baseUrl}/api/db/data/${tableName}`, {
@@ -71,12 +102,12 @@ class UltraBaseClient {
     }
   }
 
-  // 4. Submit UTR Payment
+  // Submit UTR Payment
   async submitUTR(email, utr) {
     return await this.insertData('utr_payments', { email, utr, status: 'pending' });
   }
 
-  // 5. Upload File
+  // Upload File
   async uploadFile(fileInput) {
     try {
       const formData = new FormData();
@@ -99,5 +130,4 @@ class UltraBaseClient {
 // Function to initialize UltraBase
 function createUltraBase(baseUrl, apiKey = '') {
   return new UltraBaseClient(baseUrl, apiKey);
-        }
-                         
+      }
