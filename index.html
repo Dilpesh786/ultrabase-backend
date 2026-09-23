@@ -27,6 +27,8 @@
         .status-Rejected { color: #ef4444; font-weight: bold; }
         .status-Pending { color: #f59e0b; font-weight: bold; }
         .empty-text { text-align: center; color: #94a3b8; padding: 15px 0; }
+        a { color: #38bdf8; text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -34,7 +36,7 @@
 <div class="container">
     <header>
         <h1>⚡ UltraBase Live Admin Dashboard</h1>
-        <p>તમારા PostgreSQL ડેટાબેઝમાંથી લાઈવ યુઝર્સ અને UTR રેકોર્ડ્સ</p>
+        <p>તમારા PostgreSQL ડેટાબેઝમાંથી લાઈવ યુઝર્સ, UTR અને ફાઈલ રેકોર્ડ્સ</p>
     </header>
 
     <div class="card">
@@ -84,6 +86,26 @@
             </tbody>
         </table>
     </div>
+
+    <!-- FILES TABLE -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">📁 Uploaded Files (<span id="file-count">0</span>)</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Filename</th>
+                    <th>Link</th>
+                    <th>Uploaded At</th>
+                </tr>
+            </thead>
+            <tbody id="files-table-body">
+                <tr><td colspan="4" class="empty-text">લોડ થઈ રહ્યું છે...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
@@ -128,6 +150,22 @@
                                 <button class="btn-reject" onclick="updateStatus(${u.id}, 'Rejected')">Reject</button>
                                 <button class="btn-delete" onclick="deleteUtr(${u.id})">Delete</button>
                             </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Render Files
+                const fileBody = document.getElementById('files-table-body');
+                document.getElementById('file-count').innerText = data.files.length;
+                if (data.files.length === 0) {
+                    fileBody.innerHTML = '<tr><td colspan="4" class="empty-text">હજુ સુધી કોઈ ફાઈલ અપલોડ થયેલ નથી.</td></tr>';
+                } else {
+                    fileBody.innerHTML = data.files.map(f => `
+                        <tr>
+                            <td>${f.id}</td>
+                            <td>${f.filename}</td>
+                            <td><a href="${f.file_url}" target="_blank">View File ↗</a></td>
+                            <td>${new Date(f.created_at).toLocaleString('gu-IN')}</td>
                         </tr>
                     `).join('');
                 }
