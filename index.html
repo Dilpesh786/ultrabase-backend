@@ -3,401 +3,428 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UltraBase - Neon Maroon Dashboard</title>
+    <title>UltraBase Console | Professional Cloud Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Neon Maroon & Pink Theme Setup */
-        body { 
-            background-color: #2b0414; 
-            color: #ffe6f0; 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-        }
-        
-        .sidebar { 
-            background-color: #1a020c; 
-            border-right: 2px solid #ff007f; 
-            min-height: 100vh; 
-            box-shadow: 2px 0 15px rgba(255, 0, 127, 0.2);
-        }
-
-        /* Sidebar Buttons & Hover */
-        .sidebar .nav-link { 
-            color: #ffb3d9; 
-            padding: 12px 16px; 
-            font-weight: 600; 
-            border-radius: 8px; 
-            margin-bottom: 6px; 
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { 
-            color: #ffffff; 
-            background-color: #ff007f; 
-            box-shadow: 0 0 12px #ff007f, 0 0 20px rgba(255, 0, 127, 0.4);
+        :root {
+            --bg-main: #230310;
+            --bg-sidebar: #150109;
+            --bg-card: #1c020d;
+            --bg-input: #100106;
+            --neon-pink: #ff007f;
+            --neon-pink-hover: #e60073;
+            --neon-cyan: #00ffff;
+            --text-main: #ffe6f0;
+            --text-muted: #ffb3d9;
+            --border-color: rgba(255, 0, 127, 0.3);
         }
 
-        /* Cards & Containers */
-        .card { 
-            background-color: #1f030e; 
-            border: 1px solid #ff007f; 
-            color: #ffe6f0; 
-            border-radius: 12px;
-            box-shadow: 0 0 10px rgba(255, 0, 127, 0.15);
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
         }
 
-        /* Neon Pink Buttons */
-        .btn-primary { 
-            background-color: #ff007f; 
-            border-color: #ff007f; 
-            color: #ffffff;
-            font-weight: bold;
-            box-shadow: 0 0 10px #ff007f;
-            transition: all 0.3s ease;
+        /* Top Header */
+        .top-navbar {
+            background-color: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 24px;
         }
 
-        .btn-primary:hover { 
-            background-color: #e60073; 
-            border-color: #e60073; 
-            box-shadow: 0 0 18px #ff007f;
-            color: #ffffff;
+        .project-badge {
+            background: rgba(255, 0, 127, 0.15);
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
         }
 
-        /* Inputs & Select Boxes */
-        .form-control, .form-select { 
-            background-color: #120108; 
-            border: 1px solid #ff007f; 
-            color: #00ffff; 
+        /* Sidebar Styling */
+        .sidebar {
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            min-height: calc(100vh - 61px);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar .nav-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin: 18px 0 8px 12px;
+            font-weight: 700;
+        }
+
+        .sidebar .nav-link {
+            color: var(--text-muted);
+            padding: 10px 14px;
+            font-weight: 500;
             border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #ffffff;
+            background: linear-gradient(90deg, rgba(255, 0, 127, 0.8) 0%, rgba(255, 0, 127, 0.3) 100%);
+            border-left: 4px solid var(--neon-pink);
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+        }
+
+        /* Cards & Components */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 0, 127, 0.6);
+        }
+
+        .stat-widget {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-widget .stat-icon {
+            position: absolute;
+            right: 15px;
+            bottom: 10px;
+            font-size: 2.5rem;
+            opacity: 0.15;
+            color: var(--neon-pink);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Buttons & Controls */
+        .btn-neon {
+            background-color: var(--neon-pink);
+            border: 1px solid var(--neon-pink);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 0 12px rgba(255, 0, 127, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn-neon:hover {
+            background-color: var(--neon-pink-hover);
+            border-color: var(--neon-pink-hover);
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.7);
+            color: #ffffff;
+        }
+
+        .btn-outline-neon {
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+            background: transparent;
+            font-weight: 600;
+        }
+
+        .btn-outline-neon:hover {
+            background-color: var(--neon-pink);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(255, 0, 127, 0.4);
+        }
+
+        /* Inputs */
+        .form-control, .form-select {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--neon-cyan);
+            border-radius: 8px;
+            padding: 10px 14px;
         }
 
         .form-control::placeholder {
-            color: #ff99cc;
+            color: rgba(255, 179, 217, 0.5);
         }
 
-        .form-control:focus, .form-select:focus { 
-            background-color: #120108; 
-            color: #00ffff; 
-            border-color: #00ffff; 
-            box-shadow: 0 0 10px #00ffff; 
+        .form-control:focus, .form-select:focus {
+            background-color: var(--bg-input);
+            color: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
         }
 
-        /* Tables & Typography */
-        .table { 
-            color: #ffe6f0; 
-            border-color: #ff007f; 
+        /* Tables & Code Snippets */
+        .table {
+            color: var(--text-main);
+            border-color: var(--border-color);
+            vertical-align: middle;
         }
 
-        h3, h4, h5 { 
-            color: #00ffff; 
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5); 
+        .table thead th {
+            background-color: rgba(255, 0, 127, 0.1);
+            color: var(--neon-cyan);
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
         }
 
-        code {
-            color: #00ffff;
-            background-color: #120108;
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: 1px solid #ff007f;
+        code-block {
+            background-color: #0d0106;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--neon-cyan);
+            display: block;
+            white-space: pre-wrap;
         }
 
-        .stat-card { 
-            border-left: 5px solid #00ffff; 
-        }
-
-        .stat-card h2 {
-            color: #ff007f;
-            text-shadow: 0 0 10px #ff007f;
+        .pulse-online {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #00ff66;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00ff66;
+            margin-right: 6px;
         }
     </style>
 </head>
 <body>
+
+    <!-- Top Navigation Header -->
+    <header class="top-navbar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <h4 class="m-0 font-weight-bold" style="color: var(--neon-pink); text-shadow: 0 0 12px var(--neon-pink);">
+                <i class="bi bi-lightning-charge-fill"></i> UltraBase
+            </h4>
+            <span class="project-badge"><i class="bi bi-folder2-open me-1"></i> Default Project</span>
+            <span class="badge bg-dark border border-secondary text-light"><span class="pulse-online"></span> Region: us-east (Render)</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-sm btn-outline-neon" onclick="switchTab('api-explorer')"><i class="bi bi-code-slash me-1"></i> API Docs</button>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-neon dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle me-1"></i> Admin Console
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-secondary">
+                    <li><a class="dropdown-item text-light" href="#"><i class="bi bi-gear me-2"></i> Project Settings</a></li>
+                    <li><a class="dropdown-item text-light" href="#"><i class="bi bi-shield-check me-2"></i> Security Rules</a></li>
+                    <li><hr class="dropdown-divider border-secondary"></li>
+                    <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i> Sign Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
+            
+            <!-- Sidebar Navigation -->
             <div class="col-md-3 col-lg-2 sidebar p-3">
-                <h3 class="mb-4" style="color: #ff007f; text-shadow: 0 0 12px #ff007f;">
-                    <i class="bi bi-lightning-charge-fill"></i> UltraBase
-                </h3>
-                <ul class="nav nav-pills flex-column">
+                <div class="nav-header">Core Services</div>
+                <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a href="#" class="nav-link active" onclick="switchTab('dashboard')"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                        <a href="#" class="nav-link active" onclick="switchTab('dashboard', this)"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="switchTab('keys')"><i class="bi bi-key-fill me-2"></i> API Keys</a>
+                        <a href="#" class="nav-link" onclick="switchTab('auth', this)"><i class="bi bi-shield-lock-fill"></i> Authentication</a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="switchTab('auth')"><i class="bi bi-people-fill me-2"></i> Auth & Users</a>
+                        <a href="#" class="nav-link" onclick="switchTab('database', this)"><i class="bi bi-database-fill-gear"></i> Database (NoSQL/SQL)</a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="switchTab('database')"><i class="bi bi-database-fill me-2"></i> Database Explorer</a>
+                        <a href="#" class="nav-link" onclick="switchTab('storage', this)"><i class="bi bi-cloud-arrow-up-fill"></i> Storage Buckets</a>
+                    </li>
+                </ul>
+
+                <div class="nav-header">Developer Tools</div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="switchTab('keys', this)"><i class="bi bi-key-fill"></i> API Keys & Tokens</a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="switchTab('storage')"><i class="bi bi-folder-fill me-2"></i> Storage Buckets</a>
+                        <a href="#" class="nav-link" onclick="switchTab('api-explorer', this)"><i class="bi bi-terminal-fill"></i> API Explorer & SDK</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="switchTab('logs', this)"><i class="bi bi-journal-text"></i> System Logs</a>
                     </li>
                 </ul>
             </div>
 
-            <!-- Main Content Area -->
+            <!-- Main Content Display -->
             <div class="col-md-9 col-lg-10 p-4">
-                
-                <!-- 1. DASHBOARD TAB -->
+
+                <!-- 1. DASHBOARD OVERVIEW TAB -->
                 <div id="tab-dashboard">
-                    <h3 class="mb-4"><i class="bi bi-activity"></i> System Overview</h3>
-                    <div class="row g-3">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="m-0" style="color: var(--neon-cyan);">Project Overview</h3>
+                            <p class="text-muted small m-0">Real-time metrics and system status across your backend services.</p>
+                        </div>
+                        <button class="btn btn-sm btn-outline-neon" onclick="loadStats()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh Metrics</button>
+                    </div>
+
+                    <!-- Stat Widgets -->
+                    <div class="row g-3 mb-4">
                         <div class="col-md-3">
-                            <div class="card p-3 stat-card">
-                                <small style="color: #ffb3d9;">TOTAL USERS</small>
-                                <h2 id="stat-users">0</h2>
+                            <div class="card p-3 stat-widget">
+                                <span class="text-muted small fw-bold">TOTAL USERS</span>
+                                <div class="stat-value" id="stat-users">0</div>
+                                <i class="bi bi-people stat-icon"></i>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card p-3 stat-card">
-                                <small style="color: #ffb3d9;">TABLES / COLLECTIONS</small>
-                                <h2 id="stat-tables">0</h2>
+                            <div class="card p-3 stat-widget">
+                                <span class="text-muted small fw-bold">DATABASE TABLES</span>
+                                <div class="stat-value" id="stat-tables">0</div>
+                                <i class="bi bi-table stat-icon"></i>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card p-3 stat-card">
-                                <small style="color: #ffb3d9;">DATABASE RECORDS</small>
-                                <h2 id="stat-records">0</h2>
+                            <div class="card p-3 stat-widget">
+                                <span class="text-muted small fw-bold">TOTAL RECORDS</span>
+                                <div class="stat-value" id="stat-records">0</div>
+                                <i class="bi bi-file-earmark-text stat-icon"></i>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card p-3 stat-card">
-                                <small style="color: #ffb3d9;">FILES STORED</small>
-                                <h2 id="stat-files">0</h2>
+                            <div class="card p-3 stat-widget">
+                                <span class="text-muted small fw-bold">STORAGE FILES</span>
+                                <div class="stat-value" id="stat-files">0</div>
+                                <i class="bi bi-hdd stat-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Chart & Quick Actions -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <div class="card p-3">
+                                <h6 style="color: var(--neon-cyan);" class="mb-3"><i class="bi bi-graph-up-arrow me-2"></i> API Traffic & Request Usage (24 Hours)</h6>
+                                <canvas id="trafficChart" height="120"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card p-3">
+                                <h6 style="color: var(--neon-cyan);" class="mb-3"><i class="bi bi-lightning-fill me-2"></i> Quick Actions</h6>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-neon text-start" onclick="switchTab('auth')"><i class="bi bi-person-plus me-2"></i> Add New User</button>
+                                    <button class="btn btn-outline-neon text-start" onclick="switchTab('database')"><i class="bi bi-plus-square me-2"></i> Create Data Collection</button>
+                                    <button class="btn btn-outline-neon text-start" onclick="switchTab('keys')"><i class="bi bi-key me-2"></i> Issue API Secret Key</button>
+                                    <button class="btn btn-outline-neon text-start" onclick="switchTab('storage')"><i class="bi bi-upload me-2"></i> Upload Assets to Storage</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. API KEYS TAB -->
-                <div id="tab-keys" style="display:none;">
-                    <h3 class="mb-4"><i class="bi bi-key"></i> API Key Management</h3>
-                    <div class="card p-3 mb-4">
-                        <h5>Generate New Key</h5>
-                        <div class="input-group mt-2">
-                            <input type="text" id="keyNameInput" class="form-control" placeholder="Enter Key Name (e.g. My Web App)">
-                            <button class="btn btn-primary" onclick="generateApiKey()">Generate Key</button>
-                        </div>
-                    </div>
-                    <div class="card p-3">
-                        <h5>Active API Keys</h5>
-                        <table class="table mt-3">
-                            <thead><tr><th>Name</th><th>API Key</th><th>Created At</th><th>Action</th></tr></thead>
-                            <tbody id="apiKeysTable"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 3. AUTH & USERS TAB -->
+                <!-- 2. AUTHENTICATION TAB -->
                 <div id="tab-auth" style="display:none;">
-                    <h3 class="mb-4"><i class="bi bi-people"></i> User Authentication</h3>
-                    <div class="card p-3 mb-4">
-                        <h5>Add New User</h5>
-                        <div class="row g-2 mt-1">
-                            <div class="col-md-5"><input type="email" id="userEmailInput" class="form-control" placeholder="Email Address"></div>
-                            <div class="col-md-5"><input type="password" id="userPassInput" class="form-control" placeholder="Password"></div>
-                            <div class="col-md-2"><button class="btn btn-primary w-100" onclick="addUser()">Create User</button></div>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="m-0" style="color: var(--neon-cyan);"><i class="bi bi-shield-lock me-2"></i> User Authentication</h3>
+                            <p class="text-muted small m-0">Manage user identities, credentials, and access roles.</p>
                         </div>
                     </div>
-                    <div class="card p-3">
-                        <h5>Registered Users</h5>
-                        <table class="table mt-3">
-                            <thead><tr><th>ID</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
-                            <tbody id="usersTable"></tbody>
-                        </table>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card p-3">
+                                <h5 class="mb-3" style="color: var(--neon-pink);"><i class="bi bi-person-plus me-2"></i> Register New User</h5>
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">User Email</label>
+                                    <input type="email" id="userEmailInput" class="form-control" placeholder="user@example.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Password</label>
+                                    <input type="password" id="userPassInput" class="form-control" placeholder="••••••••">
+                                </div>
+                                <button class="btn btn-neon w-100" onclick="addUser()"><i class="bi bi-check-circle me-1"></i> Create Account</button>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card p-3">
+                                <h5 class="mb-3" style="color: var(--neon-pink);"><i class="bi bi-people me-2"></i> Registered Users</h5>
+                                <div class="table-responsive">
+                                    <table class="table align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>User ID</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="usersTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 4. DATABASE TAB -->
+                <!-- 3. DATABASE EXPLORER TAB -->
                 <div id="tab-database" style="display:none;">
-                    <h3 class="mb-4"><i class="bi bi-database"></i> Database Explorer</h3>
-                    <div class="card p-3 mb-4">
-                        <h5>Create New Table</h5>
-                        <div class="input-group mt-2">
-                            <input type="text" id="tableNameInput" class="form-control" placeholder="Table Name (e.g. orders)">
-                            <button class="btn btn-primary" onclick="createTable()">Create Table</button>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="m-0" style="color: var(--neon-cyan);"><i class="bi bi-database me-2"></i> Database Explorer</h3>
+                            <p class="text-muted small m-0">Manage collections, schemas, and live record entries.</p>
                         </div>
                     </div>
-                    <div class="card p-3">
-                        <h5>Tables</h5>
-                        <div id="tablesList" class="d-flex gap-2 flex-wrap mb-3"></div>
-                        <hr style="border-color: #ff007f;">
-                        <h5 id="selectedTableTitle">Select a table</h5>
-                        <table class="table mt-3">
-                            <thead><tr id="dbTableHeader"></tr></thead>
-                            <tbody id="dbTableBody"></tbody>
-                        </table>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card p-3 mb-3">
+                                <h5 style="color: var(--neon-pink);" class="mb-3"><i class="bi bi-folder-plus me-2"></i> New Table / Collection</h5>
+                                <div class="input-group">
+                                    <input type="text" id="tableNameInput" class="form-control" placeholder="e.g., products">
+                                    <button class="btn btn-neon" onclick="createTable()">Create</button>
+                                </div>
+                            </div>
+                            <div class="card p-3">
+                                <h6 style="color: var(--neon-cyan);" class="mb-3"><i class="bi bi-list-nested me-2"></i> Available Tables</h6>
+                                <div id="tablesList" class="d-flex flex-column gap-2"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="card p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 id="selectedTableTitle" class="m-0" style="color: var(--neon-pink);">Select a table from sidebar</h5>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead><tr id="dbTableHeader"></tr></thead>
+                                        <tbody id="dbTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 5. STORAGE TAB -->
+                <!-- 4. STORAGE BUCKETS TAB -->
                 <div id="tab-storage" style="display:none;">
-                    <h3 class="mb-4"><i class="bi bi-folder"></i> Storage Buckets</h3>
-                    <div class="card p-3 mb-4">
-                        <h5>Upload File</h5>
-                        <input type="file" id="fileUploadInput" class="form-control mt-2 mb-2">
-                        <button class="btn btn-primary" onclick="uploadFile()">Upload File</button>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="m-0" style="color: var(--neon-cyan);"><i class="bi bi-cloud-arrow-up me-2"></i> Storage Buckets</h3>
+                            <p class="text-muted small m-0">Store and serve images, documents, and media assets.</p>
+                        </div>
                     </div>
-                    <div class="card p-3">
-                        <h5>Uploaded Files</h5>
-                        <table class="table mt-3">
-                            <thead><tr><th>Filename</th><th>Size</th><th>URL</th><th>Action</th></tr></thead>
-                            <tbody id="filesTable"></tbody>
-                        </table>
-                    </div>
-                </div>
 
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function switchTab(tab) {
-            ['dashboard', 'keys', 'auth', 'database', 'storage'].forEach(t => {
-                document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
-            });
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            event.target.classList.add('active');
-
-            if(tab === 'dashboard') loadStats();
-            if(tab === 'keys') loadKeys();
-            if(tab === 'auth') loadUsers();
-            if(tab === 'database') loadTables();
-            if(tab === 'storage') loadFiles();
-        }
-
-        async function loadStats() {
-            const res = await fetch('/api/stats');
-            const data = await res.json();
-            document.getElementById('stat-users').innerText = data.totalUsers || 0;
-            document.getElementById('stat-tables').innerText = data.totalTables || 0;
-            document.getElementById('stat-records').innerText = data.totalRecords || 0;
-            document.getElementById('stat-files').innerText = data.totalFiles || 0;
-        }
-
-        async function loadKeys() {
-            const res = await fetch('/api/keys');
-            const data = await res.json();
-            let html = '';
-            data.forEach(k => {
-                html += `<tr><td>${k.name}</td><td><code>${k.key}</code></td><td>${new Date(k.createdAt).toLocaleDateString()}</td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteKey(${k.id})">Revoke</button></td></tr>`;
-            });
-            document.getElementById('apiKeysTable').innerHTML = html;
-        }
-
-        async function generateApiKey() {
-            const name = document.getElementById('keyNameInput').value;
-            await fetch('/api/keys/generate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name })
-            });
-            document.getElementById('keyNameInput').value = '';
-            loadKeys();
-        }
-
-        async function deleteKey(id) {
-            await fetch(`/api/keys/${id}`, { method: 'DELETE' });
-            loadKeys();
-        }
-
-        async function loadUsers() {
-            const res = await fetch('/api/auth/users');
-            const data = await res.json();
-            let html = '';
-            data.forEach(u => {
-                html += `<tr><td>${u.id}</td><td>${u.email}</td><td><span class="badge" style="background-color: #ff007f; box-shadow: 0 0 8px #ff007f;">${u.role}</span></td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})">Delete</button></td></tr>`;
-            });
-            document.getElementById('usersTable').innerHTML = html;
-        }
-
-        async function addUser() {
-            const email = document.getElementById('userEmailInput').value;
-            const password = document.getElementById('userPassInput').value;
-            await fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email, password })
-            });
-            document.getElementById('userEmailInput').value = '';
-            document.getElementById('userPassInput').value = '';
-            loadUsers();
-        }
-
-        async function deleteUser(id) {
-            await fetch(`/api/auth/users/${id}`, { method: 'DELETE' });
-            loadUsers();
-        }
-
-        async function loadTables() {
-            const res = await fetch('/api/db/tables');
-            const tables = await res.json();
-            let html = '';
-            tables.forEach(t => {
-                html += `<button class="btn btn-outline-info btn-sm" style="border-color: #00ffff; color: #00ffff;" onclick="viewTableData('${t}')">${t}</button>`;
-            });
-            document.getElementById('tablesList').innerHTML = html;
-        }
-
-        async function createTable() {
-            const tableName = document.getElementById('tableNameInput').value;
-            await fetch('/api/db/create-table', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ tableName })
-            });
-            document.getElementById('tableNameInput').value = '';
-            loadTables();
-        }
-
-        async function viewTableData(tableName) {
-            document.getElementById('selectedTableTitle').innerText = 'Data in: ' + tableName;
-            const res = await fetch(`/api/db/data/${tableName}`);
-            const data = await res.json();
-            if(data.length === 0) {
-                document.getElementById('dbTableHeader').innerHTML = '<th>No Data</th>';
-                document.getElementById('dbTableBody').innerHTML = '<tr><td>Table is empty</td></tr>';
-                return;
-            }
-            let keys = Object.keys(data[0]);
-            let headerHtml = '';
-            keys.forEach(k => headerHtml += `<th>${k}</th>`);
-            document.getElementById('dbTableHeader').innerHTML = headerHtml;
-
-            let bodyHtml = '';
-            data.forEach(row => {
-                bodyHtml += '<tr>';
-                keys.forEach(k => bodyHtml += `<td>${JSON.stringify(row[k])}</td>`);
-                bodyHtml += '</tr>';
-            });
-            document.getElementById('dbTableBody').innerHTML = bodyHtml;
-        }
-
-        async function loadFiles() {
-            const res = await fetch('/api/storage/files');
-            const files = await res.json();
-            let html = '';
-            files.forEach(f => {
-                html += `<tr><td>${f.originalname}</td><td>${f.size}</td><td><a href="${f.url}" target="_blank" style="color: #00ffff;">View File</a></td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${f.id})">Delete</button></td></tr>`;
-            });
-            document.getElementById('filesTable').innerHTML = html;
-        }
-
-        async function uploadFile() {
-            const input = document.getElementById('fileUploadInput');
-            if(!input.files[0]) return alert('Select file first');
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-            await fetch('/api/storage/upload', { method: 'POST', body: formData });
-            input.value = '';
-            loadFiles();
-        }
-
-        loadStats();
-    </script>
-</body>
-    </html>
-                                         
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                       
