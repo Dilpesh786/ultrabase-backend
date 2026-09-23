@@ -36,7 +36,7 @@ async function initDb() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('Database tables initialized successfully with Security support!');
+    console.log('Database tables initialized successfully!');
   } catch (err) {
     console.error('Error initializing database:', err);
   }
@@ -44,7 +44,7 @@ async function initDb() {
 
 initDb();
 
-// 1. REGISTER USER (Password Hashed with Bcrypt)
+// 1. REGISTER USER
 app.post('/api/register', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -52,23 +52,19 @@ app.post('/api/register', async (req, res) => {
   }
 
   try {
-    // Check if user exists
     const userExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (userExist.rows.length > 0) {
       return res.status(400).json({ success: false, message: 'આ ઈમેલ પહેલેથી નોંધાયેલ છે.' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Insert user
     const newUser = await pool.query(
       'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email, created_at',
       [email, hashedPassword]
     );
 
-    // Generate JWT Token
     const token = jwt.sign({ id: newUser.rows[0].id, email: newUser.rows[0].email }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
@@ -83,7 +79,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// 2. LOGIN USER (Verify Password & Return JWT)
+// 2. LOGIN USER
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -102,7 +98,6 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'ઈમેલ અથવા પાસવર્ડ ખોટો છે.' });
     }
 
-    // Generate JWT Token
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
@@ -150,6 +145,46 @@ app.get('/api/admin/all-data', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'ડેટા ફેચ કરવામાં એરર આવી.' });
+  }
+});
+
+// 5. ADMIN CONTROL - UPDATE UTR STATUS (Approve / Reject)
+app.post('/api/admin/update-utr-status', async (req, res) => {
+  const { id, status } = req.body;
+  if (!id || !status) {
+    return res.status(400).json({ success: false, message: 'ID અને Status જરૂરી છે.' });
+  }
+
+  try {
+    await pool.query('UPDATE utr_submissions SET status = $1 WHERE id = $2', [status, id]);
+    res.json({ success: true, message: `UTR સ્ટેટસ બદલાઈને ${status} થઈ ગયું છે.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'સ્ટેટસ અપડેટ કરવામાં એરર આવી.' });
+  }
+});
+
+// 6. ADMIN CONTROL - DELETE USER
+app.delete('/api/admin/delete-user/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    res.json({ success: true, message: 'યુઝર ડિલીટ થઈ ગયો છે.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'યુઝર ડિલીટ કરવામાં એરર આવી.' });
+  }
+});
+
+// 7. ADMIN CONTROL - DELETE UTR
+app.delete('/api/admin/delete-utr/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM utr_submissions WHERE id = $1', [id]);
+    res.json({ success: true, message: 'UTR રેકોર્ડ ડિલીટ થઈ ગયો છે.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'UTR ડિલીટ કરવામાં એરર આવી.' });
   }
 });
 
