@@ -3,17 +3,40 @@
  * Easy Backend Integration for Web Applications
  */
 class UltraBaseClient {
-  constructor(baseUrl) {
+  constructor(baseUrl, apiKey = '') {
     this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.apiKey = apiKey;
+  }
+
+  // Helper method for headers
+  getHeaders(customHeaders = {}) {
+    return {
+      'Content-Type': 'application/json',
+      'x-ultrabase-api-key': this.apiKey,
+      ...customHeaders
+    };
+  }
+
+  // Ping Server / Test SDK Connection
+  async ping() {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/v1/ping`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
   }
 
   // 1. User Register
-  async register(email, password) {
+  async register(email, role = 'user') {
     try {
-      const response = await fetch(`${this.baseUrl}/api/register`, {
+      const response = await fetch(`${this.baseUrl}/api/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        headers: this.getHeaders(),
+        body: JSON.stringify({ email, role })
       });
       return await response.json();
     } catch (error) {
@@ -21,13 +44,13 @@ class UltraBaseClient {
     }
   }
 
-  // 2. User Login
-  async login(email, password) {
+  // 2. Insert Data into Dynamic Table
+  async insertData(tableName, data) {
     try {
-      const response = await fetch(`${this.baseUrl}/api/login`, {
+      const response = await fetch(`${this.baseUrl}/api/db/data/${tableName}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        headers: this.getHeaders(),
+        body: JSON.stringify(data)
       });
       return await response.json();
     } catch (error) {
@@ -35,28 +58,35 @@ class UltraBaseClient {
     }
   }
 
-  // 3. Submit UTR Payment
+  // 3. Get Data from Dynamic Table
+  async getData(tableName) {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/db/data/${tableName}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // 4. Submit UTR Payment
   async submitUTR(email, utr) {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/submit-utr`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, utr })
-      });
-      return await response.json();
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
+    return await this.insertData('utr_payments', { email, utr, status: 'pending' });
   }
 
-  // 4. Upload File
+  // 5. Upload File
   async uploadFile(fileInput) {
     try {
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
 
-      const response = await fetch(`${this.baseUrl}/api/upload`, {
+      const response = await fetch(`${this.baseUrl}/api/storage/upload`, {
         method: 'POST',
+        headers: {
+          'x-ultrabase-api-key': this.apiKey
+        },
         body: formData
       });
       return await response.json();
@@ -67,7 +97,7 @@ class UltraBaseClient {
 }
 
 // Function to initialize UltraBase
-function createUltraBase(baseUrl) {
-  return new UltraBaseClient(baseUrl);
+function createUltraBase(baseUrl, apiKey = '') {
+  return new UltraBaseClient(baseUrl, apiKey);
         }
-
+                         
