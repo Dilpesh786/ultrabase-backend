@@ -80,7 +80,7 @@ app.get('/api/keys', (req, res) => {
 });
 
 app.post('/api/keys/generate', (req, res) => {
-    res.json({ success: true, message: 'Key generated successfully', key: 'ub_live_' + Math.random().toString(36.substring(2, 12)) });
+    res.json({ success: true, message: 'Key generated successfully', key: 'ub_live_' + Math.random().toString(36).substring(2, 12) });
 });
 
 // Auth Users API
@@ -183,4 +183,3 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 UltraBase Real Database Server running on port ${PORT}`);
 });
-                          
