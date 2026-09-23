@@ -3,466 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UltraBase - Real-time BaaS Platform</title>
+    <title>UltraBase - Neon Maroon Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        :root {
-            --bg-dark: #0f172a;
-            --panel-bg: #1e293b;
-            --accent-green: #10b981;
-            --text-light: #f8fafc;
-            --border-color: #334155;
+        /* Neon Maroon & Pink Theme Setup */
+        body { 
+            background-color: #2b0414; 
+            color: #ffe6f0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
         }
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        
+        .sidebar { 
+            background-color: #1a020c; 
+            border-right: 2px solid #ff007f; 
+            min-height: 100vh; 
+            box-shadow: 2px 0 15px rgba(255, 0, 127, 0.2);
         }
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            background: var(--panel-bg);
-            border-right: 1px solid var(--border-color);
-            padding-top: 20px;
+
+        /* Sidebar Buttons & Hover */
+        .sidebar .nav-link { 
+            color: #ffb3d9; 
+            padding: 12px 16px; 
+            font-weight: 600; 
+            border-radius: 8px; 
+            margin-bottom: 6px; 
+            transition: all 0.3s ease;
         }
-        .sidebar a {
-            color: #94a3b8;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            transition: all 0.3s;
-            cursor: pointer;
+        
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { 
+            color: #ffffff; 
+            background-color: #ff007f; 
+            box-shadow: 0 0 12px #ff007f, 0 0 20px rgba(255, 0, 127, 0.4);
         }
-        .sidebar a:hover, .sidebar a.active {
-            background: #0284c7;
-            color: white;
+
+        /* Cards & Containers */
+        .card { 
+            background-color: #1f030e; 
+            border: 1px solid #ff007f; 
+            color: #ffe6f0; 
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(255, 0, 127, 0.15);
         }
-        .content {
-            margin-left: 260px;
-            padding: 30px;
+
+        /* Neon Pink Buttons */
+        .btn-primary { 
+            background-color: #ff007f; 
+            border-color: #ff007f; 
+            color: #ffffff;
+            font-weight: bold;
+            box-shadow: 0 0 10px #ff007f;
+            transition: all 0.3s ease;
         }
-        .card-custom {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+
+        .btn-primary:hover { 
+            background-color: #e60073; 
+            border-color: #e60073; 
+            box-shadow: 0 0 18px #ff007f;
+            color: #ffffff;
         }
-        .table-custom {
-            color: var(--text-light);
+
+        /* Inputs & Select Boxes */
+        .form-control, .form-select { 
+            background-color: #120108; 
+            border: 1px solid #ff007f; 
+            color: #00ffff; 
+            border-radius: 8px;
         }
-        .table-custom th {
-            background: #0f172a;
-            border-color: var(--border-color);
+
+        .form-control::placeholder {
+            color: #ff99cc;
         }
-        .table-custom td {
-            border-color: var(--border-color);
+
+        .form-control:focus, .form-select:focus { 
+            background-color: #120108; 
+            color: #00ffff; 
+            border-color: #00ffff; 
+            box-shadow: 0 0 10px #00ffff; 
         }
-        .drop-zone {
-            border: 2px dashed #0284c7;
-            border-radius: 10px;
-            padding: 40px;
-            text-align: center;
-            background: #0f172a;
-            cursor: pointer;
+
+        /* Tables & Typography */
+        .table { 
+            color: #ffe6f0; 
+            border-color: #ff007f; 
+        }
+
+        h3, h4, h5 { 
+            color: #00ffff; 
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5); 
+        }
+
+        code {
+            color: #00ffff;
+            background-color: #120108;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #ff007f;
+        }
+
+        .stat-card { 
+            border-left: 5px solid #00ffff; 
+        }
+
+        .stat-card h2 {
+            color: #ff007f;
+            text-shadow: 0 0 10px #ff007f;
         }
     </style>
 </head>
 <body>
-
-    <div class="sidebar">
-        <h3 class="px-3 mb-4 text-emerald-400 font-bold"><i class="fa-solid fa-bolt text-warning"></i> UltraBase</h3>
-        <a class="nav-link active" onclick="showSection('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
-        <a class="nav-link" onclick="showSection('apikeys')"><i class="fa-solid fa-key"></i> API Keys</a>
-        <a class="nav-link" onclick="showSection('auth')"><i class="fa-solid fa-users"></i> Auth & Users</a>
-        <a class="nav-link" onclick="showSection('database')"><i class="fa-solid fa-database"></i> Database Explorer</a>
-        <a class="nav-link" onclick="showSection('storage')"><i class="fa-solid fa-folder-open"></i> Storage Buckets</a>
-        <a class="nav-link" onclick="showSection('api')"><i class="fa-solid fa-terminal"></i> REST API Explorer</a>
-    </div>
-
-    <div class="content">
-
-        <!-- 1. DASHBOARD OVERVIEW -->
-        <div id="section-dashboard" class="section-block">
-            <h2>System Overview</h2>
-            <hr class="border-secondary">
-            <div class="row mt-4">
-                <div class="col-md-3">
-                    <div class="card-custom">
-                        <small class="text-secondary">TOTAL USERS</small>
-                        <h3 id="stat-users">0</h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card-custom">
-                        <small class="text-secondary">TABLES / COLLECTIONS</small>
-                        <h3 id="stat-tables">0</h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card-custom">
-                        <small class="text-secondary">DATABASE RECORDS</small>
-                        <h3 id="stat-records">0</h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card-custom">
-                        <small class="text-secondary">FILES STORED</small>
-                        <h3 id="stat-files">0</h3>
-                    </div>
-                </div>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-3">
+                <h3 class="mb-4" style="color: #ff007f; text-shadow: 0 0 12px #ff007f;">
+                    <i class="bi bi-lightning-charge-fill"></i> UltraBase
+                </h3>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" onclick="switchTab('dashboard')"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="switchTab('keys')"><i class="bi bi-key-fill me-2"></i> API Keys</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="switchTab('auth')"><i class="bi bi-people-fill me-2"></i> Auth & Users</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="switchTab('database')"><i class="bi bi-database-fill me-2"></i> Database Explorer</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="switchTab('storage')"><i class="bi bi-folder-fill me-2"></i> Storage Buckets</a>
+                    </li>
+                </ul>
             </div>
-        </div>
 
-        <!-- 2. API KEYS MANAGER -->
-        <div id="section-apikeys" class="section-block d-none">
-            <h2>API Keys Management</h2>
-            <hr class="border-secondary">
-            <div class="card-custom">
-                <h5>Generate New API Key</h5>
-                <div class="row g-2 mt-2">
-                    <div class="col-md-8">
-                        <input type="text" id="newKeyName" class="form-control bg-dark text-light border-secondary" placeholder="e.g. Mobile App Key">
-                    </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-warning w-100" onclick="generateApiKey()">+ Generate Key</button>
+            <!-- Main Content Area -->
+            <div class="col-md-9 col-lg-10 p-4">
+                
+                <!-- 1. DASHBOARD TAB -->
+                <div id="tab-dashboard">
+                    <h3 class="mb-4"><i class="bi bi-activity"></i> System Overview</h3>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="card p-3 stat-card">
+                                <small style="color: #ffb3d9;">TOTAL USERS</small>
+                                <h2 id="stat-users">0</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card p-3 stat-card">
+                                <small style="color: #ffb3d9;">TABLES / COLLECTIONS</small>
+                                <h2 id="stat-tables">0</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card p-3 stat-card">
+                                <small style="color: #ffb3d9;">DATABASE RECORDS</small>
+                                <h2 id="stat-records">0</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card p-3 stat-card">
+                                <small style="color: #ffb3d9;">FILES STORED</small>
+                                <h2 id="stat-files">0</h2>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="card-custom">
-                <h5>Active API Keys</h5>
-                <table class="table table-custom mt-3">
-                    <thead>
-                        <tr><th>ID</th><th>Key Name</th><th>API Key</th><th>Created At</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="apiKeysTableBody"></tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- 3. AUTHENTICATION MANAGER -->
-        <div id="section-auth" class="section-block d-none">
-            <h2>Authentication & User Management</h2>
-            <hr class="border-secondary">
-            <div class="card-custom">
-                <h5>Create New User</h5>
-                <div class="row g-2 mt-2">
-                    <div class="col-md-6">
-                        <input type="email" id="newUserEmail" class="form-control bg-dark text-light border-secondary" placeholder="user@example.com">
+                <!-- 2. API KEYS TAB -->
+                <div id="tab-keys" style="display:none;">
+                    <h3 class="mb-4"><i class="bi bi-key"></i> API Key Management</h3>
+                    <div class="card p-3 mb-4">
+                        <h5>Generate New Key</h5>
+                        <div class="input-group mt-2">
+                            <input type="text" id="keyNameInput" class="form-control" placeholder="Enter Key Name (e.g. My Web App)">
+                            <button class="btn btn-primary" onclick="generateApiKey()">Generate Key</button>
+                        </div>
                     </div>
-                    <div class="col-md-3">
-                        <select id="newUserRole" class="form-select bg-dark text-light border-secondary">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <button class="btn btn-success w-100" onclick="createUser()">+ Add User</button>
+                    <div class="card p-3">
+                        <h5>Active API Keys</h5>
+                        <table class="table mt-3">
+                            <thead><tr><th>Name</th><th>API Key</th><th>Created At</th><th>Action</th></tr></thead>
+                            <tbody id="apiKeysTable"></tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-            <div class="card-custom">
-                <h5>Registered Users</h5>
-                <table class="table table-custom mt-3">
-                    <thead>
-                        <tr><th>ID</th><th>Email</th><th>Role</th><th>Created At</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="usersTableBody"></tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- 4. DYNAMIC DATABASE EXPLORER -->
-        <div id="section-database" class="section-block d-none">
-            <h2>Database Collections & Tables</h2>
-            <hr class="border-secondary">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card-custom">
+                <!-- 3. AUTH & USERS TAB -->
+                <div id="tab-auth" style="display:none;">
+                    <h3 class="mb-4"><i class="bi bi-people"></i> User Authentication</h3>
+                    <div class="card p-3 mb-4">
+                        <h5>Add New User</h5>
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-5"><input type="email" id="userEmailInput" class="form-control" placeholder="Email Address"></div>
+                            <div class="col-md-5"><input type="password" id="userPassInput" class="form-control" placeholder="Password"></div>
+                            <div class="col-md-2"><button class="btn btn-primary w-100" onclick="addUser()">Create User</button></div>
+                        </div>
+                    </div>
+                    <div class="card p-3">
+                        <h5>Registered Users</h5>
+                        <table class="table mt-3">
+                            <thead><tr><th>ID</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
+                            <tbody id="usersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. DATABASE TAB -->
+                <div id="tab-database" style="display:none;">
+                    <h3 class="mb-4"><i class="bi bi-database"></i> Database Explorer</h3>
+                    <div class="card p-3 mb-4">
                         <h5>Create New Table</h5>
-                        <input type="text" id="newTableName" class="form-control bg-dark text-light border-secondary mt-2" placeholder="e.g. products">
-                        <button class="btn btn-primary w-100 mt-2" onclick="createTable()">Create Table</button>
-                        
-                        <h6 class="mt-4">Tables</h6>
-                        <div id="tablesList" class="list-group list-group-flush mt-2"></div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card-custom">
-                        <h5 id="currentTableTitle">Select a Table</h5>
-                        <div class="mt-3">
-                            <h6>Insert JSON Record</h6>
-                            <textarea id="jsonRecordInput" class="form-control bg-dark text-light border-secondary" rows="3" placeholder='{"name": "Sample Product", "price": 99}'></textarea>
-                            <button class="btn btn-success mt-2" onclick="insertRecord()">Insert Data</button>
-                        </div>
-                        <div class="table-responsive mt-4">
-                            <table class="table table-custom">
-                                <tbody id="tableDataBody"></tbody>
-                            </table>
+                        <div class="input-group mt-2">
+                            <input type="text" id="tableNameInput" class="form-control" placeholder="Table Name (e.g. orders)">
+                            <button class="btn btn-primary" onclick="createTable()">Create Table</button>
                         </div>
                     </div>
+                    <div class="card p-3">
+                        <h5>Tables</h5>
+                        <div id="tablesList" class="d-flex gap-2 flex-wrap mb-3"></div>
+                        <hr style="border-color: #ff007f;">
+                        <h5 id="selectedTableTitle">Select a table</h5>
+                        <table class="table mt-3">
+                            <thead><tr id="dbTableHeader"></tr></thead>
+                            <tbody id="dbTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
+
+                <!-- 5. STORAGE TAB -->
+                <div id="tab-storage" style="display:none;">
+                    <h3 class="mb-4"><i class="bi bi-folder"></i> Storage Buckets</h3>
+                    <div class="card p-3 mb-4">
+                        <h5>Upload File</h5>
+                        <input type="file" id="fileUploadInput" class="form-control mt-2 mb-2">
+                        <button class="btn btn-primary" onclick="uploadFile()">Upload File</button>
+                    </div>
+                    <div class="card p-3">
+                        <h5>Uploaded Files</h5>
+                        <table class="table mt-3">
+                            <thead><tr><th>Filename</th><th>Size</th><th>URL</th><th>Action</th></tr></thead>
+                            <tbody id="filesTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
-
-        <!-- 5. STORAGE BUCKET MANAGER -->
-        <div id="section-storage" class="section-block d-none">
-            <h2>Storage Bucket Manager</h2>
-            <hr class="border-secondary">
-            <div class="card-custom">
-                <div class="drop-zone" onclick="document.getElementById('fileUploadInput').click()">
-                    <i class="fa-solid fa-cloud-arrow-up fa-3x text-info mb-3"></i>
-                    <p>Click or Drag files here to upload</p>
-                    <input type="file" id="fileUploadInput" class="d-none" onchange="uploadFile(this.files[0])">
-                </div>
-            </div>
-            <div class="card-custom">
-                <h5>Uploaded Files</h5>
-                <table class="table table-custom mt-3">
-                    <thead>
-                        <tr><th>ID</th><th>Filename</th><th>Size</th><th>Link</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="filesTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 6. REST API EXPLORER -->
-        <div id="section-api" class="section-block d-none">
-            <h2>Interactive REST API Console</h2>
-            <hr class="border-secondary">
-            <div class="card-custom">
-                <div class="input-group">
-                    <select id="apiMethod" class="form-select bg-dark text-light border-secondary" style="max-width: 120px;">
-                        <option value="GET">GET</option>
-                        <option value="POST">POST</option>
-                    </select>
-                    <input type="text" id="apiUrl" class="form-control bg-dark text-light border-secondary" value="/api/v1/ping">
-                    <button class="btn btn-info" onclick="executeApiTest()">Send Request</button>
-                </div>
-                <div class="mt-3">
-                    <h6>Response:</h6>
-                    <pre id="apiResponse" class="p-3 bg-dark text-success border border-secondary rounded" style="max-height: 300px; overflow-y: auto;">{}</pre>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <script>
-        let currentSelectedTable = '';
+        function switchTab(tab) {
+            ['dashboard', 'keys', 'auth', 'database', 'storage'].forEach(t => {
+                document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
+            });
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            event.target.classList.add('active');
 
-        function showSection(sectionId) {
-            document.querySelectorAll('.section-block').forEach(el => el.classList.add('d-none'));
-            document.querySelectorAll('.sidebar a').forEach(el => el.classList.remove('active'));
-            document.getElementById('section-' + sectionId).classList.remove('d-none');
-            
-            if (sectionId === 'dashboard') loadStats();
-            if (sectionId === 'apikeys') loadApiKeys();
-            if (sectionId === 'auth') loadUsers();
-            if (sectionId === 'database') loadTables();
-            if (sectionId === 'storage') loadFiles();
+            if(tab === 'dashboard') loadStats();
+            if(tab === 'keys') loadKeys();
+            if(tab === 'auth') loadUsers();
+            if(tab === 'database') loadTables();
+            if(tab === 'storage') loadFiles();
         }
 
         async function loadStats() {
-            try {
-                const res = await fetch('/api/stats');
-                const data = await res.json();
-                document.getElementById('stat-users').innerText = data.totalUsers || 0;
-                document.getElementById('stat-tables').innerText = data.totalTables || 0;
-                document.getElementById('stat-records').innerText = data.totalRecords || 0;
-                document.getElementById('stat-files').innerText = data.totalFiles || 0;
-            } catch(e) {
-                console.error(e);
-            }
+            const res = await fetch('/api/stats');
+            const data = await res.json();
+            document.getElementById('stat-users').innerText = data.totalUsers || 0;
+            document.getElementById('stat-tables').innerText = data.totalTables || 0;
+            document.getElementById('stat-records').innerText = data.totalRecords || 0;
+            document.getElementById('stat-files').innerText = data.totalFiles || 0;
         }
 
-        async function loadApiKeys() {
-            try {
-                const res = await fetch('/api/keys');
-                const keys = await res.json();
-                const tbody = document.getElementById('apiKeysTableBody');
-                if(!Array.isArray(keys)) return;
-                tbody.innerHTML = keys.map(k => `
-                    <tr>
-                        <td>${k.id}</td>
-                        <td>${k.name}</td>
-                        <td><code>${k.key}</code></td>
-                        <td>${new Date(k.createdAt).toLocaleString()}</td>
-                        <td><button class="btn btn-sm btn-danger" onclick="deleteApiKey(${k.id})">Revoke</button></td>
-                    </tr>
-                `).join('');
-            } catch(e) {
-                console.error(e);
-            }
+        async function loadKeys() {
+            const res = await fetch('/api/keys');
+            const data = await res.json();
+            let html = '';
+            data.forEach(k => {
+                html += `<tr><td>${k.name}</td><td><code>${k.key}</code></td><td>${new Date(k.createdAt).toLocaleDateString()}</td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteKey(${k.id})">Revoke</button></td></tr>`;
+            });
+            document.getElementById('apiKeysTable').innerHTML = html;
         }
 
         async function generateApiKey() {
-            const name = document.getElementById('newKeyName').value || 'Default Key';
+            const name = document.getElementById('keyNameInput').value;
             await fetch('/api/keys/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ name })
             });
-            document.getElementById('newKeyName').value = '';
-            loadApiKeys();
+            document.getElementById('keyNameInput').value = '';
+            loadKeys();
         }
 
-        async function deleteApiKey(id) {
-            await fetch('/api/keys/' + id, { method: 'DELETE' });
-            loadApiKeys();
+        async function deleteKey(id) {
+            await fetch(`/api/keys/${id}`, { method: 'DELETE' });
+            loadKeys();
         }
 
         async function loadUsers() {
-            try {
-                const res = await fetch('/api/auth/users');
-                const users = await res.json();
-                const tbody = document.getElementById('usersTableBody');
-                if(!Array.isArray(users)) return;
-                tbody.innerHTML = users.map(u => `
-                    <tr>
-                        <td>${u.id}</td>
-                        <td>${u.email}</td>
-                        <td><span class="badge bg-secondary">${u.role}</span></td>
-                        <td>${new Date(u.createdAt).toLocaleString()}</td>
-                        <td><button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">Delete</button></td>
-                    </tr>
-                `).join('');
-            } catch(e) {
-                console.error(e);
-            }
+            const res = await fetch('/api/auth/users');
+            const data = await res.json();
+            let html = '';
+            data.forEach(u => {
+                html += `<tr><td>${u.id}</td><td>${u.email}</td><td><span class="badge" style="background-color: #ff007f; box-shadow: 0 0 8px #ff007f;">${u.role}</span></td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})">Delete</button></td></tr>`;
+            });
+            document.getElementById('usersTable').innerHTML = html;
         }
 
-        async function createUser() {
-            const email = document.getElementById('newUserEmail').value;
-            const role = document.getElementById('newUserRole').value;
-            if(!email) return alert('Email લખો');
-            await fetch('/api/auth/register', {
+        async function addUser() {
+            const email = document.getElementById('userEmailInput').value;
+            const password = document.getElementById('userPassInput').value;
+            await fetch('/api/auth/signup', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, role })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
             });
-            document.getElementById('newUserEmail').value = '';
+            document.getElementById('userEmailInput').value = '';
+            document.getElementById('userPassInput').value = '';
             loadUsers();
         }
 
         async function deleteUser(id) {
-            await fetch('/api/auth/users/' + id, { method: 'DELETE' });
+            await fetch(`/api/auth/users/${id}`, { method: 'DELETE' });
             loadUsers();
         }
 
         async function loadTables() {
-            try {
-                const res = await fetch('/api/db/tables');
-                const tables = await res.json();
-                const list = document.getElementById('tablesList');
-                if(!Array.isArray(tables)) return;
-                list.innerHTML = tables.map(t => `
-                    <button class="list-group-item list-group-item-action bg-dark text-light border-secondary" onclick="selectTable('${t}')">${t}</button>
-                `).join('');
-                if (tables.length > 0 && !currentSelectedTable) selectTable(tables[0]);
-            } catch(e) {
-                console.error(e);
-            }
+            const res = await fetch('/api/db/tables');
+            const tables = await res.json();
+            let html = '';
+            tables.forEach(t => {
+                html += `<button class="btn btn-outline-info btn-sm" style="border-color: #00ffff; color: #00ffff;" onclick="viewTableData('${t}')">${t}</button>`;
+            });
+            document.getElementById('tablesList').innerHTML = html;
         }
 
         async function createTable() {
-            const tableName = document.getElementById('newTableName').value;
-            if(!tableName) return;
+            const tableName = document.getElementById('tableNameInput').value;
             await fetch('/api/db/create-table', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ tableName })
             });
-            document.getElementById('newTableName').value = '';
+            document.getElementById('tableNameInput').value = '';
             loadTables();
         }
 
-        async function selectTable(tableName) {
-            currentSelectedTable = tableName;
-            document.getElementById('currentTableTitle').innerText = 'Table: ' + tableName;
-            const res = await fetch('/api/db/data/' + tableName);
+        async function viewTableData(tableName) {
+            document.getElementById('selectedTableTitle').innerText = 'Data in: ' + tableName;
+            const res = await fetch(`/api/db/data/${tableName}`);
             const data = await res.json();
-            const tbody = document.getElementById('tableDataBody');
-            
-            if(!Array.isArray(data) || data.length === 0) {
-                tbody.innerHTML = '<tr><td class="text-muted">No records found.</td></tr>';
+            if(data.length === 0) {
+                document.getElementById('dbTableHeader').innerHTML = '<th>No Data</th>';
+                document.getElementById('dbTableBody').innerHTML = '<tr><td>Table is empty</td></tr>';
                 return;
             }
+            let keys = Object.keys(data[0]);
+            let headerHtml = '';
+            keys.forEach(k => headerHtml += `<th>${k}</th>`);
+            document.getElementById('dbTableHeader').innerHTML = headerHtml;
 
-            let html = '<thead><tr>' + Object.keys(data[0]).map(k => `<th>${k}</th>`).join('') + '<th>Actions</th></tr></thead><tbody>';
-            html += data.map(row => `
-                <tr>
-                    ${Object.values(row).map(val => `<td>${typeof val === 'object' ? JSON.stringify(val) : val}</td>`).join('')}
-                    <td><button class="btn btn-sm btn-danger" onclick="deleteRecord('${tableName}', ${row.id})">Delete</button></td>
-                </tr>
-            `).join('');
-            html += '</tbody>';
-            tbody.innerHTML = html;
-        }
-
-        async function insertRecord() {
-            if(!currentSelectedTable) return alert('Select a table first');
-            try {
-                const jsonInput = document.getElementById('jsonRecordInput').value;
-                const payload = JSON.parse(jsonInput);
-                await fetch('/api/db/data/' + currentSelectedTable, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                document.getElementById('jsonRecordInput').value = '';
-                selectTable(currentSelectedTable);
-            } catch(e) {
-                alert('Invalid JSON input!');
-            }
-        }
-
-        async function deleteRecord(tableName, id) {
-            await fetch(`/api/db/data/${tableName}/${id}`, { method: 'DELETE' });
-            selectTable(tableName);
+            let bodyHtml = '';
+            data.forEach(row => {
+                bodyHtml += '<tr>';
+                keys.forEach(k => bodyHtml += `<td>${JSON.stringify(row[k])}</td>`);
+                bodyHtml += '</tr>';
+            });
+            document.getElementById('dbTableBody').innerHTML = bodyHtml;
         }
 
         async function loadFiles() {
-            try {
-                const res = await fetch('/api/storage/files');
-                const files = await res.json();
-                const tbody = document.getElementById('filesTableBody');
-                if(!Array.isArray(files)) return;
-                tbody.innerHTML = files.map(f => `
-                    <tr>
-                        <td>${f.id}</td>
-                        <td>${f.originalname}</td>
-                        <td>${f.size} bytes</td>
-                        <td><a href="${f.url}" target="_blank" class="text-info">Open Link</a></td>
-                        <td><button class="btn btn-sm btn-danger" onclick="deleteFile(${f.id})">Delete</button></td>
-                    </tr>
-                `).join('');
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        async function uploadFile(file) {
-            if(!file) return;
-            const formData = new FormData();
-            formData.append('file', file);
-            await fetch('/api/storage/upload', {
-                method: 'POST',
-                body: formData
+            const res = await fetch('/api/storage/files');
+            const files = await res.json();
+            let html = '';
+            files.forEach(f => {
+                html += `<tr><td>${f.originalname}</td><td>${f.size}</td><td><a href="${f.url}" target="_blank" style="color: #00ffff;">View File</a></td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${f.id})">Delete</button></td></tr>`;
             });
+            document.getElementById('filesTable').innerHTML = html;
+        }
+
+        async function uploadFile() {
+            const input = document.getElementById('fileUploadInput');
+            if(!input.files[0]) return alert('Select file first');
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            await fetch('/api/storage/upload', { method: 'POST', body: formData });
+            input.value = '';
             loadFiles();
         }
 
-        async function deleteFile(id) {
-            await fetch('/api/storage/files/' + id, { method: 'DELETE' });
-            loadFiles();
-        }
-
-        async function executeApiTest() {
-            const method = document.getElementById('apiMethod').value;
-      
+        loadStats();
+    </script>
+</body>
+    </html>
+                                         
