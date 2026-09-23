@@ -18,35 +18,56 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-// Storage Configuration
+// Storage Configuration for Files/Buckets
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage });
 
-// Clean In-Memory Store (No Dummy Data - Zero Initialized)
+// Hybrid In-Memory Database Store (Zero Initialized Clean Data)
 const db = {
     apiKeys: [],
     users: [],
-    tables: {},
+    tables: {},       // Relational / Table Data
+    documents: {},    // Firebase style NoSQL JSON Collections
     files: []
 };
 
+// Rate Limiting Mock Middleware
+const requestCounts = {};
+app.use('/api/', (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    if (!requestCounts[ip]) requestCounts[ip] = { count: 0, startTime: now };
+    
+    if (now - requestCounts[ip].startTime > 60000) {
+        requestCounts[ip] = { count: 1, startTime: now };
+    } else {
+        requestCounts[ip].count++;
+        if (requestCounts[ip].count > 120) {
+            return res.status(429).json({ error: 'Rate limit exceeded. Too many requests.' });
+        }
+    }
+    next();
+});
+
 // ==========================================
-// 1. SYSTEM STATS & HEALTH API
+// SYSTEM STATS & HEALTH API
 // ==========================================
 app.get('/api/v1/ping', (req, res) => {
-    res.json({ status: 'online', message: 'UltraBase Backend Server Running Smoothly!' });
+    res.json({ status: 'online', message: 'UltraBase Hybrid Backend Running Successfully!' });
 });
 
 app.get('/api/stats', (req, res) => {
     let totalRecords = 0;
     Object.values(db.tables).forEach(arr => totalRecords += arr.length);
+    Object.values(db.documents).forEach(arr => totalRecords += arr.length);
     
     res.json({
         totalUsers: db.users.length,
         totalTables: Object.keys(db.tables).length,
+        totalCollections: Object.keys(db.documents).length,
         totalRecords: totalRecords,
         totalFiles: db.files.length,
         totalApiKeys: db.apiKeys.length
@@ -54,7 +75,7 @@ app.get('/api/stats', (req, res) => {
 });
 
 // ==========================================
-// 2. API KEYS MANAGEMENT
+// API KEYS MANAGEMENT
 // ==========================================
 app.get('/api/keys', (req, res) => res.json(db.apiKeys));
 
@@ -62,8 +83,8 @@ app.post('/api/keys/generate', (req, res) => {
     const { name } = req.body;
     const newKey = {
         id: Date.now(),
-        name: name || 'Default API Key',
-        key: 'ub_live_' + Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12),
+        name: name || 'App API Key',
+        key: 'ub_live_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
         createdAt: new Date()
     };
     db.apiKeys.push(newKey);
@@ -73,42 +94,39 @@ app.post('/api/keys/generate', (req, res) => {
 app.delete('/api/keys/:id', (req, res) => {
     const id = parseInt(req.params.id);
     db.apiKeys = db.apiKeys.filter(k => k.id !== id);
-    res.json({ message: 'API Key Revoked' });
+    res.json({ message: 'API Key Revoked Successfully' });
 });
 
 // ==========================================
-// 3. AUTHENTICATION & USER MANAGEMENT
+// AUTHENTICATION & USERS API
 // ==========================================
 app.get('/api/auth/users', (req, res) => res.json(db.users));
 
-app.post('/api/auth/register', (req, res) => {
-    const { email, role } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
-    
-    const newUser = { id: Date.now(), email, role: role || 'user', createdAt: new Date() };
-    db.users.push(newUser);
-    res.status(201).json(newUser);
-});
-
 app.post('/api/auth/signup', (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    const { email, password, role } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-    const existingUser = db.users.find(u => u.email === email);
-    if (existingUser) return res.status(400).json({ error: 'User already exists' });
+    const existing = db.users.find(u => u.email === email);
+    if (existing) return res.status(400).json({ error: 'User already exists' });
 
-    const newUser = { id: Date.now(), email, password, role: 'user', createdAt: new Date() };
+    const newUser = { 
+        id: Date.now(), 
+        email, 
+        password, 
+        role: role || 'user', 
+        token: 'ub_jwt_' + Math.random().toString(36).substring(2, 15),
+        createdAt: new Date() 
+    };
     db.users.push(newUser);
-    res.status(201).json({ message: 'User registered successfully', user: { id: newUser.id, email: newUser.email } });
+    res.status(201).json({ message: 'User registered', user: { id: newUser.id, email: newUser.email, role: newUser.role, token: newUser.token } });
 });
 
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
     const user = db.users.find(u => u.email === email && u.password === password);
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
-
-    res.json({ message: 'Login successful', user: { id: user.id, email: user.email, role: user.role } });
+    res.json({ message: 'Login successful', token: user.token, user: { id: user.id, email: user.email, role: user.role } });
 });
 
 app.delete('/api/auth/users/:id', (req, res) => {
@@ -118,15 +136,15 @@ app.delete('/api/auth/users/:id', (req, res) => {
 });
 
 // ==========================================
-// 4. DYNAMIC DATABASE EXPLORER
+// HYBRID DATABASE (TABLES & NOSQL DOCUMENTS)
 // ==========================================
 app.get('/api/db/tables', (req, res) => res.json(Object.keys(db.tables)));
 
 app.post('/api/db/create-table', (req, res) => {
     const { tableName } = req.body;
-    if (!tableName) return res.status(400).json({ error: 'Table name is required' });
+    if (!tableName) return res.status(400).json({ error: 'Table name required' });
     if (!db.tables[tableName]) db.tables[tableName] = [];
-    res.status(201).json({ message: `Table '${tableName}' created successfully` });
+    res.status(201).json({ message: `Table '${tableName}' created` });
 });
 
 app.get('/api/db/data/:tableName', (req, res) => {
@@ -137,28 +155,34 @@ app.get('/api/db/data/:tableName', (req, res) => {
 app.post('/api/db/data/:tableName', (req, res) => {
     const { tableName } = req.params;
     if (!db.tables[tableName]) db.tables[tableName] = [];
-    
-    const record = { id: Date.now(), ...req.body };
+    const record = { id: Date.now(), ...req.body, createdAt: new Date() };
     db.tables[tableName].push(record);
     res.status(201).json(record);
 });
 
-app.delete('/api/db/data/:tableName/:id', (req, res) => {
-    const { tableName, id } = req.params;
-    if (db.tables[tableName]) {
-        db.tables[tableName] = db.tables[tableName].filter(item => item.id !== parseInt(id));
-    }
-    res.json({ message: 'Record deleted' });
+// Firebase style NoSQL Document Collections API
+app.get('/api/db/collections', (req, res) => res.json(Object.keys(db.documents)));
+
+app.post('/api/db/collection/:name', (req, res) => {
+    const { name } = req.params;
+    if (!db.documents[name]) db.documents[name] = [];
+    const doc = { id: 'doc_' + Date.now(), ...req.body, updatedAt: new Date() };
+    db.documents[name].push(doc);
+    res.status(201).json(doc);
+});
+
+app.get('/api/db/collection/:name', (req, res) => {
+    const { name } = req.params;
+    res.json(db.documents[name] || []);
 });
 
 // ==========================================
-// 5. STORAGE BUCKET API
+// STORAGE BUCKETS API
 // ==========================================
 app.get('/api/storage/files', (req, res) => res.json(db.files));
 
 app.post('/api/storage/upload', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
     const fileRecord = {
         id: Date.now(),
         originalname: req.file.originalname,
@@ -174,15 +198,14 @@ app.post('/api/storage/upload', upload.single('file'), (req, res) => {
 app.delete('/api/storage/files/:id', (req, res) => {
     const id = parseInt(req.params.id);
     db.files = db.files.filter(f => f.id !== id);
-    res.json({ message: 'File record deleted' });
+    res.json({ message: 'File deleted' });
 });
 
-// Serve Frontend Dashboard UI
+// Frontend UI Route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start Server
 app.listen(PORT, () => {
-    console.log(`🚀 UltraBase Server Running on Port ${PORT}`);
+    console.log(`🚀 UltraBase Hybrid Server running on port ${PORT}`);
 });
