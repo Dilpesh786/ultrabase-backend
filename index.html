@@ -172,7 +172,7 @@
         }
     </style>
 </head>
-<body>
+<body onload="loadStats()">
 
     <header class="top-navbar d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
@@ -411,19 +411,16 @@
 
     <script>
         function switchTab(tabName, element) {
-            // Hide all tab panes
             const panes = document.querySelectorAll('.tab-content-pane');
             panes.forEach(pane => {
                 pane.style.display = 'none';
             });
 
-            // Show selected tab pane
             const targetPane = document.getElementById('tab-' + tabName);
             if (targetPane) {
                 targetPane.style.display = 'block';
             }
 
-            // Update active state on sidebar links
             if (element) {
                 document.querySelectorAll('.sidebar .nav-link').forEach(link => {
                     link.classList.remove('active');
@@ -431,7 +428,6 @@
                 element.classList.add('active');
             }
 
-            // Load specific tab data
             if(tabName === 'dashboard') loadStats();
             if(tabName === 'keys') loadKeys();
             if(tabName === 'auth') loadUsers();
@@ -443,4 +439,178 @@
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
-                document.getElementById('stat-
+                document.getElementById('stat-users').innerText = data.totalUsers || 0;
+                document.getElementById('stat-tables').innerText = data.totalTables || 0;
+                document.getElementById('stat-records').innerText = data.totalRecords || 0;
+                document.getElementById('stat-files').innerText = data.totalFiles || 0;
+            } catch (err) {
+                console.error('Error loading stats:', err);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/auth/users');
+                const users = await res.json();
+                const tbody = document.getElementById('usersTable');
+                tbody.innerHTML = '';
+                users.forEach(u => {
+                    tbody.innerHTML += `<tr><td>${u.id}</td><td>${u.email}</td><td><span class="badge bg-secondary">${u.role || 'user'}</span></td><td><span class="text-muted">Active</span></td></tr>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function addUser() {
+            const email = document.getElementById('userEmailInput').value;
+            const password = document.getElementById('userPassInput').value;
+            if(!email || !password) { alert('Please enter email and password'); return; }
+            const res = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert('User created successfully!');
+                document.getElementById('userEmailInput').value = '';
+                document.getElementById('userPassInput').value = '';
+                loadUsers();
+                loadStats();
+            } else {
+                alert('Error creating user');
+            }
+        }
+
+        async function loadTables() {
+            try {
+                const res = await fetch('/api/db/tables');
+                const tables = await res.json();
+                const list = document.getElementById('tablesList');
+                list.innerHTML = '';
+                tables.forEach(t => {
+                    list.innerHTML += `<button class="btn btn-sm btn-outline-neon text-start" onclick="loadTableData('${t}')"><i class="bi bi-table me-2"></i>${t}</button>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function createTable() {
+            const tableName = document.getElementById('tableNameInput').value;
+            if(!tableName) { alert('Enter table name'); return; }
+            const res = await fetch('/api/db/create-table', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableName })
+            });
+            if(res.ok) {
+                document.getElementById('tableNameInput').value = '';
+                loadTables();
+                loadStats();
+            }
+        }
+
+        async function loadTableData(tableName) {
+            document.getElementById('selectedTableTitle').innerText = `Table: ${tableName}`;
+            const res = await fetch(`/api/db/data/${tableName}`);
+            const rows = await res.json();
+            const header = document.getElementById('dbTableHeader');
+            const body = document.getElementById('dbTableBody');
+            header.innerHTML = '';
+            body.innerHTML = '';
+            if(rows.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" class="text-muted">No records found in this table.</td></tr>`;
+                return;
+            }
+            const keys = Object.keys(rows[0]);
+            keys.forEach(k => header.innerHTML += `<th>${k}</th>`);
+            rows.forEach(r => {
+                let tr = '<tr>';
+                keys.forEach(k => tr += `<td>${r[k] || ''}</td>`);
+                tr += '</tr>';
+                body.innerHTML += tr;
+            });
+        }
+
+        async function loadFiles() {
+            try {
+                const res = await fetch('/api/storage/files');
+                const files = await res.json();
+                const tbody = document.getElementById('filesTable');
+                tbody.innerHTML = '';
+                files.forEach(f => {
+                    tbody.innerHTML += `<tr><td>${f.originalname}</td><td>${(f.size/1024).toFixed(1)} KB</td><td><a href="${f.url}" target="_blank" style="color: var(--neon-cyan)">View File</a></td><td><span class="text-muted">Stored</span></td></tr>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileUploadInput');
+            if(fileInput.files.length === 0) { alert('Select a file first'); return; }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            const res = await fetch('/api/storage/upload', {
+                method: 'POST',
+                body: formData
+            });
+            if(res.ok) {
+                alert('File uploaded successfully!');
+                fileInput.value = '';
+                loadFiles();
+                loadStats();
+            }
+        }
+
+        async function loadKeys() {
+            try {
+                const res = await fetch('/api/keys');
+                const keys = await res.json();
+                const tbody = document.getElementById('apiKeysTable');
+                tbody.innerHTML = '';
+                keys.forEach(k => {
+                    tbody.innerHTML += `<tr><td>${k.name}</td><td><code>${k.key}</code></td><td>${new Date(k.createdAt).toLocaleDateString()}</td><td><span class="text-badge text-success">Active</span></td></tr>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function generateApiKey() {
+            const name = document.getElementById('keyNameInput').value || 'Custom API Key';
+            const res = await fetch('/api/keys/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert('API Key Generated: ' + data.key);
+                document.getElementById('keyNameInput').value = '';
+                loadKeys();
+            }
+        }
+
+        // Initialize chart
+        const ctx = document.getElementById('trafficChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['10m ago', '8m ago', '6m ago', '4m ago', '2m ago', 'Now'],
+                datasets: [{
+                    label: 'API Requests',
+                    data: [5, 12, 8, 15, 22, 35],
+                    borderColor: '#00ffff',
+                    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
