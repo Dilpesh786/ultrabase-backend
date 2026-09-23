@@ -1,160 +1,104 @@
 const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(__dirname));
 
-// Ensure Uploads Directory Exists
+// Multer setup for file uploads
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
+app.use('/uploads', express.static(uploadDir));
 
-// Multer Storage for File Uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
 });
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
-// Real Persistent JSON Database File Path
+// Database Helper Functions
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// Load Database from Disk
 function loadDB() {
-    if (fs.existsSync(DB_FILE)) {
-        try {
-            const data = fs.readFileSync(DB_FILE, 'utf8');
-            return JSON.parse(data);
-        } catch (e) {
-            console.error("Error reading database file", e);
-        }
+    if (!fs.existsSync(DB_FILE)) {
+        const initialDB = {
+            tables: {
+                users: [
+                    { id: 1, email: 'dilpesh@ultrabase.io', role: 'admin', created_at: new Date() }
+                ]
+            },
+            documents: {},
+            files: []
+        };
+        fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2));
     }
-    return {
-        apiKeys: [],
-        users: [],
-        tables: {},
-        documents: {},
-        files: []
-    };
+    try {
+        const data = fs.readFileSync(DB_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        return { tables: {}, documents: {}, files: [] };
+    }
 }
 
-// Save Database to Disk
-function saveDB(dbData) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(dbData, null, 2), 'utf8');
+function saveDB(data) {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
-// Rate Limiting Middleware
-const requestCounts = {};
-app.use('/api/', (req, res, next) => {
-    const ip = req.ip || req.connection.remoteAddress;
-    const now = Date.now();
-    if (!requestCounts[ip]) requestCounts[ip] = { count: 0, startTime: now };
-    
-    if (now - requestCounts[ip].startTime > 60000) {
-        requestCounts[ip] = { count: 1, startTime: now };
-    } else {
-        requestCounts[ip].count++;
-        if (requestCounts[ip].count > 150) {
-            return res.status(429).json({ error: 'Rate limit exceeded. Too many requests.' });
-        }
-    }
-    next();
-});
-
 // ==========================================
-// SYSTEM STATS & HEALTH API
+// API ENDPOINTS
 // ==========================================
-app.get('/api/v1/ping', (req, res) => {
-    res.json({ status: 'online', message: 'UltraBase Real Database Backend Running Successfully!' });
-});
 
+// Stats API
 app.get('/api/stats', (req, res) => {
     const db = loadDB();
+    const totalTables = Object.keys(db.tables).length;
     let totalRecords = 0;
-    Object.values(db.tables).forEach(arr => totalRecords += arr.length);
-    Object.values(db.documents).forEach(arr => totalRecords += arr.length);
-    
+    Object.values(db.tables).forEach(table => {
+        totalRecords += table.length;
+    });
     res.json({
-        totalUsers: db.users.length,
-        totalTables: Object.keys(db.tables).length,
-        totalCollections: Object.keys(db.documents).length,
+        totalUsers: db.tables.users ? db.tables.users.length : 1,
+        totalTables: totalTables,
         totalRecords: totalRecords,
-        totalFiles: db.files.length,
-        totalApiKeys: db.apiKeys.length
+        totalFiles: db.files.length
     });
 });
 
-// ==========================================
-// API KEYS MANAGEMENT
-// ==========================================
+// Keys API
 app.get('/api/keys', (req, res) => {
-    const db = loadDB();
-    res.json(db.apiKeys);
+    res.json([{ id: 1, name: 'Default Mobile Key', key: 'ub_live_786786', createdAt: new Date() }]);
 });
 
 app.post('/api/keys/generate', (req, res) => {
-    const db = loadDB();
-    const { name } = req.body;
-    const newKey = {
-        id: Date.now(),
-        name: name || 'App API Key',
-        key: 'ub_live_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
-        createdAt: new Date()
-    };
-    db.apiKeys.push(newKey);
-    saveDB(db);
-    res.status(201).json(newKey);
+    res.json({ success: true, message: 'Key generated successfully', key: 'ub_live_' + Math.random().toString(36.substring(2, 12)) });
 });
 
-// ==========================================
-// AUTHENTICATION & USERS API
-// ==========================================
+// Auth Users API
 app.get('/api/auth/users', (req, res) => {
     const db = loadDB();
-    res.json(db.users);
+    res.json(db.tables.users || []);
 });
 
 app.post('/api/auth/signup', (req, res) => {
     const db = loadDB();
-    const { email, password, role } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-
-    const existing = db.users.find(u => u.email === email);
-    if (existing) return res.status(400).json({ error: 'User already exists' });
-
-    const newUser = { 
-        id: Date.now(), 
-        email, 
-        password, 
-        role: role || 'user', 
-        token: 'ub_jwt_' + Math.random().toString(36).substring(2, 15),
-        createdAt: new Date() 
-    };
-    db.users.push(newUser);
+    if (!db.tables.users) db.tables.users = [];
+    const newUser = { id: Date.now(), ...req.body, role: req.body.role || 'user', createdAt: new Date() };
+    db.tables.users.push(newUser);
     saveDB(db);
-    res.status(201).json({ message: 'User registered', user: { id: newUser.id, email: newUser.email, role: newUser.role, token: newUser.token } });
+    res.status(201).json({ success: true, message: 'User added', user: newUser });
 });
 
-app.post('/api/auth/login', (req, res) => {
-    const db = loadDB();
-    const { email, password } = req.body;
-    const user = db.users.find(u => u.email === email && u.password === password);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    res.json({ message: 'Login successful', token: user.token, user: { id: user.id, email: user.email, role: user.role } });
-});
-
-// ==========================================
-// REAL RELATIONAL TABLES & NOSQL DATABASE
-// ==========================================
+// Database Tables API
 app.get('/api/db/tables', (req, res) => {
     const db = loadDB();
     res.json(Object.keys(db.tables));
@@ -188,12 +132,13 @@ app.post('/api/db/data/:tableName', (req, res) => {
 // NoSQL Collections API
 app.get('/api/db/collections', (req, res) => {
     const db = loadDB();
-    res.json(Object.keys(db.documents));
+    res.json(Object.keys(db.documents || {}));
 });
 
 app.post('/api/db/collection/:name', (req, res) => {
     const db = loadDB();
     const { name } = req.params;
+    if (!db.documents) db.documents = {};
     if (!db.documents[name]) db.documents[name] = [];
     const doc = { id: 'doc_' + Date.now(), ...req.body, updatedAt: new Date() };
     db.documents[name].push(doc);
@@ -204,15 +149,13 @@ app.post('/api/db/collection/:name', (req, res) => {
 app.get('/api/db/collection/:name', (req, res) => {
     const db = loadDB();
     const { name } = req.params;
-    res.json(db.documents[name] || []);
+    res.json(db.documents && db.documents[name] ? db.documents[name] : []);
 });
 
-// ==========================================
-// STORAGE BUCKETS API
-// ==========================================
+// Storage Buckets API
 app.get('/api/storage/files', (req, res) => {
     const db = loadDB();
-    res.json(db.files);
+    res.json(db.files || []);
 });
 
 app.post('/api/storage/upload', upload.single('file'), (req, res) => {
@@ -226,6 +169,7 @@ app.post('/api/storage/upload', upload.single('file'), (req, res) => {
         url: `/uploads/${req.file.filename}`,
         uploadedAt: new Date()
     };
+    if (!db.files) db.files = [];
     db.files.push(fileRecord);
     saveDB(db);
     res.status(201).json(fileRecord);
@@ -239,4 +183,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 UltraBase Real Database Server running on port ${PORT}`);
 });
-        
+                          
