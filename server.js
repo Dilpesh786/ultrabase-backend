@@ -3,13 +3,33 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.')); // Serve admin dashboard (index.html)
+app.use(express.static('.')); 
+app.use('/uploads', express.static('uploads')); // Uploaded files access link
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ultrabase_super_secret_key_123';
+
+// Storage configuration for Multer
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
 
 // PostgreSQL Database Connection
 const pool = new Pool({
@@ -35,8 +55,15 @@ async function initDb() {
         status VARCHAR(50) DEFAULT 'Pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS files (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        file_url VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
-    console.log('Database tables initialized successfully!');
+    console.log('Database tables initialized with File Storage support!');
   } catch (err) {
     console.error('Error initializing database:', err);
   }
@@ -131,16 +158,37 @@ app.post('/api/submit-utr', async (req, res) => {
   }
 });
 
-// 4. ADMIN API - GET ALL DATA
+// 4. FILE UPLOAD API
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'કોઈ ફાઈલ પસંદ કરી નથી.' });
+  }
+
+  const fileUrl = `/uploads/${req.file.filename}`;
+  try {
+    const result = await pool.query(
+      'INSERT INTO files (filename, file_url) VALUES ($1, $2) RETURNING *',
+      [req.file.originalname, fileUrl]
+    );
+    res.json({ success: true, message: 'ફાઈલ અપલોડ થઈ ગઈ!', file: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'ફાઈલ સેવ કરવામાં એરર આવી.' });
+  }
+});
+
+// 5. ADMIN API - GET ALL DATA
 app.get('/api/admin/all-data', async (req, res) => {
   try {
     const users = await pool.query('SELECT id, email, created_at FROM users ORDER BY id DESC');
     const utrs = await pool.query('SELECT * FROM utr_submissions ORDER BY id DESC');
+    const files = await pool.query('SELECT * FROM files ORDER BY id DESC');
 
     res.json({
       success: true,
       users: users.rows,
-      utrs: utrs.rows
+      utrs: utrs.rows,
+      files: files.rows
     });
   } catch (err) {
     console.error(err);
@@ -148,7 +196,7 @@ app.get('/api/admin/all-data', async (req, res) => {
   }
 });
 
-// 5. ADMIN CONTROL - UPDATE UTR STATUS (Approve / Reject)
+// 6. ADMIN CONTROL - UPDATE UTR STATUS
 app.post('/api/admin/update-utr-status', async (req, res) => {
   const { id, status } = req.body;
   if (!id || !status) {
@@ -164,7 +212,7 @@ app.post('/api/admin/update-utr-status', async (req, res) => {
   }
 });
 
-// 6. ADMIN CONTROL - DELETE USER
+// 7. ADMIN CONTROL - DELETE USER
 app.delete('/api/admin/delete-user/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -176,7 +224,7 @@ app.delete('/api/admin/delete-user/:id', async (req, res) => {
   }
 });
 
-// 7. ADMIN CONTROL - DELETE UTR
+// 8. ADMIN CONTROL - DELETE UTR
 app.delete('/api/admin/delete-utr/:id', async (req, res) => {
   const { id } = req.params;
   try {
