@@ -1,133 +1,81 @@
 /**
- * UltraBase Client SDK
- * Easy Backend Integration for Web Applications
+ * UltraBase Client SDK v2.0
+ * Powerful BaaS Client for Frontend Applications
  */
 class UltraBaseClient {
-  constructor(baseUrl, apiKey = '') {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.apiKey = apiKey;
+    constructor(baseUrl = '') {
+        this.baseUrl = baseUrl;
+    }
 
-    // Dedicated Auth Module
-    this.auth = {
-      // Sign Up with Email and Password
-      signUp: async (email, password) => {
-        try {
-          const response = await fetch(`${this.baseUrl}/api/auth/signup`, {
+    async ping() {
+        const res = await fetch(`${this.baseUrl}/api/v1/ping`);
+        return await res.json();
+    }
+
+    // Authentication Methods
+    async signUp(email, password) {
+        const res = await fetch(`${this.baseUrl}/api/auth/signup`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
-          });
-          return await response.json();
-        } catch (error) {
-          return { success: false, message: error.message };
-        }
-      },
+        });
+        return await res.json();
+    }
 
-      // Log In with Email and Password
-      logIn: async (email, password) => {
-        try {
-          const response = await fetch(`${this.baseUrl}/api/auth/login`, {
+    async signIn(email, password) {
+        const res = await fetch(`${this.baseUrl}/api/auth/login`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
-          });
-          return await response.json();
-        } catch (error) {
-          return { success: false, message: error.message };
+        });
+        const data = await res.json();
+        if (data.token) {
+            localStorage.setItem('ub_token', data.token);
         }
-      }
-    };
-  }
-
-  // Helper method for headers
-  getHeaders(customHeaders = {}) {
-    return {
-      'Content-Type': 'application/json',
-      'x-ultrabase-api-key': this.apiKey,
-      ...customHeaders
-    };
-  }
-
-  // Ping Server / Test SDK Connection
-  async ping() {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ping`, {
-        method: 'GET',
-        headers: this.getHeaders()
-      });
-      return await response.json();
-    } catch (error) {
-      return { success: false, message: error.message };
+        return data;
     }
-  }
 
-  // Quick Register User (By Email & Role)
-  async register(email, role = 'user') {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({ email, role })
-      });
-      return await response.json();
-    } catch (error) {
-      return { success: false, message: error.message };
+    // Database Relational Table Methods
+    async getTableRows(tableName) {
+        const res = await fetch(`${this.baseUrl}/api/db/data/${tableName}`);
+        return await res.json();
     }
-  }
 
-  // Insert Data into Dynamic Table
-  async insertData(tableName, data) {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/db/data/${tableName}`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify(data)
-      });
-      return await response.json();
-    } catch (error) {
-      return { success: false, message: error.message };
+    async insertRow(tableName, data) {
+        const res = await fetch(`${this.baseUrl}/api/db/data/${tableName}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await res.json();
     }
-  }
 
-  // Get Data from Dynamic Table
-  async getData(tableName) {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/db/data/${tableName}`, {
-        method: 'GET',
-        headers: this.getHeaders()
-      });
-      return await response.json();
-    } catch (error) {
-      return { success: false, message: error.message };
+    // NoSQL Document Collection Methods (Firebase Style)
+    async addDocument(collectionName, documentData) {
+        const res = await fetch(`${this.baseUrl}/api/db/collection/${collectionName}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(documentData)
+        });
+        return await res.json();
     }
-  }
 
-  // Submit UTR Payment
-  async submitUTR(email, utr) {
-    return await this.insertData('utr_payments', { email, utr, status: 'pending' });
-  }
-
-  // Upload File
-  async uploadFile(fileInput) {
-    try {
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-
-      const response = await fetch(`${this.baseUrl}/api/storage/upload`, {
-        method: 'POST',
-        headers: {
-          'x-ultrabase-api-key': this.apiKey
-        },
-        body: formData
-      });
-      return await response.json();
-    } catch (error) {
-      return { success: false, message: error.message };
+    async getDocuments(collectionName) {
+        const res = await fetch(`${this.baseUrl}/api/db/collection/${collectionName}`);
+        return await res.json();
     }
-  }
+
+    // Storage Bucket Methods
+    async uploadFile(fileObject) {
+        const formData = new FormData();
+        formData.append('file', fileObject);
+        const res = await fetch(`${this.baseUrl}/api/storage/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        return await res.json();
+    }
 }
 
-// Function to initialize UltraBase
-function createUltraBase(baseUrl, apiKey = '') {
-  return new UltraBaseClient(baseUrl, apiKey);
-      }
+// Export for global usage
+window.UltraBase = UltraBaseClient;
