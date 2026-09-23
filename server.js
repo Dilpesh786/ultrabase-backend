@@ -1,22 +1,24 @@
 const express = require('express');
-const cors = require('cors');
-const path = require('path');
 const { Pool } = require('pg');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(express.json());
+app.use(express.static('.')); // Serve admin dashboard (index.html)
 
-// Database Connection
+const JWT_SECRET = process.env.JWT_SECRET || 'ultrabase_super_secret_key_123';
+
+// PostgreSQL Database Connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Database Tables Setup
-async function initDB() {
+// Initialize Database Tables
+async function initDb() {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -25,95 +27,133 @@ async function initDB() {
         password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
       CREATE TABLE IF NOT EXISTS utr_submissions (
         id SERIAL PRIMARY KEY,
-        email VARCHAR(255),
+        user_email VARCHAR(255) NOT NULL,
         utr_number VARCHAR(100) NOT NULL,
         status VARCHAR(50) DEFAULT 'Pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("Database tables initialized successfully!");
+    console.log('Database tables initialized successfully with Security support!');
   } catch (err) {
-    console.error("Database connection error:", err);
+    console.error('Error initializing database:', err);
   }
 }
-initDB();
 
-// Front-end Dashboard Route
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+initDb();
 
-// API Status Route
-app.get('/api/status', (req, res) => {
-  res.json({
-    platform: "UltraBase Backend Cloud API",
-    status: "Online & Operational",
-    db_connected: true,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Admin API: Get All Users
-app.get('/api/admin/users', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, email, created_at FROM users ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching users: " + err.message });
-  }
-});
-
-// Admin API: Get All UTR Submissions
-app.get('/api/admin/utrs', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, email, utr_number, status, created_at FROM utr_submissions ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching UTRs: " + err.message });
-  }
-});
-
-// Login API (Saves user to DB)
-app.post('/api/auth/login', async (req, res) => {
+// 1. REGISTER USER (Password Hashed with Bcrypt)
+app.post('/api/register', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({ message: "ઈમેલ અને પાસવર્ડ જરૂરી છે." });
+    return res.status(400).json({ success: false, message: 'ઈમેલ અને પાસવર્ડ બંને જરૂરી છે.' });
   }
 
   try {
-    let userQuery = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (userQuery.rows.length === 0) {
-      userQuery = await pool.query('INSERT INTO users (email, password) VALUES ($1, $2) RETURNING *', [email, password]);
+    // Check if user exists
+    const userExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userExist.rows.length > 0) {
+      return res.status(400).json({ success: false, message: 'આ ઈમેલ પહેલેથી નોંધાયેલ છે.' });
     }
-    
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Insert user
+    const newUser = await pool.query(
+      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email, created_at',
+      [email, hashedPassword]
+    );
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: newUser.rows[0].id, email: newUser.rows[0].email }, JWT_SECRET, { expiresIn: '7d' });
+
     res.json({
-      message: "સફળતાપૂર્વક ઓથેન્ટિકેટ થયું!",
-      token: "jwt-token-" + Date.now(),
-      user: { id: userQuery.rows[0].id, email: userQuery.rows[0].email }
+      success: true,
+      message: 'યુઝર સફળતાપૂર્વક રજીસ્ટર થયો!',
+      token,
+      user: newUser.rows[0]
     });
   } catch (err) {
-    res.status(500).json({ message: "ડેટાબેઝ એરર: " + err.message });
+    console.error(err);
+    res.status(500).json({ success: false, message: 'સર્વર એરર આવી.' });
   }
 });
 
-// UTR Submission API (Saves UTR to DB)
-app.post('/api/utr/submit', async (req, res) => {
-  const { email, utr } = req.body;
-  if (!utr) {
-    return res.status(400).json({ message: "UTR નંબર જરૂરી છે." });
+// 2. LOGIN USER (Verify Password & Return JWT)
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'ઈમેલ અને પાસવર્ડ જરૂરી છે.' });
   }
 
   try {
-    await pool.query('INSERT INTO utr_submissions (email, utr_number) VALUES ($1, $2)', [email || 'guest', utr]);
-    res.json({ message: "તમારો UTR નંબર સફળતાપૂર્વક ડેટાબેઝમાં સાચવવામાં આવ્યો છે!" });
+    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'ઈમેલ અથવા પાસવર્ડ ખોટો છે.' });
+    }
+
+    const user = userResult.rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'ઈમેલ અથવા પાસવર્ડ ખોટો છે.' });
+    }
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      success: true,
+      message: 'લોગિન સફળ રહ્યું!',
+      token,
+      user: { id: user.id, email: user.email, created_at: user.created_at }
+    });
   } catch (err) {
-    res.status(500).json({ message: "ડેટાબેઝ એરર: " + err.message });
+    console.error(err);
+    res.status(500).json({ success: false, message: 'સર્વર એરર આવી.' });
   }
 });
 
-// Server Listener
+// 3. SUBMIT UTR
+app.post('/api/submit-utr', async (req, res) => {
+  const { email, utr } = req.body;
+  if (!email || !utr) {
+    return res.status(400).json({ success: false, message: 'ઈમેલ અને UTR નંબર બંને જરૂરી છે.' });
+  }
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO utr_submissions (user_email, utr_number) VALUES ($1, $2) RETURNING *',
+      [email, utr]
+    );
+    res.json({ success: true, message: 'UTR સફળતાપૂર્વક સબમિટ થયો!', data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'સર્વર એરર આવી.' });
+  }
+});
+
+// 4. ADMIN API - GET ALL DATA
+app.get('/api/admin/all-data', async (req, res) => {
+  try {
+    const users = await pool.query('SELECT id, email, created_at FROM users ORDER BY id DESC');
+    const utrs = await pool.query('SELECT * FROM utr_submissions ORDER BY id DESC');
+
+    res.json({
+      success: true,
+      users: users.rows,
+      utrs: utrs.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'ડેટા ફેચ કરવામાં એરર આવી.' });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
