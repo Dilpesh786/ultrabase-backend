@@ -1,0 +1,11 @@
+image: node:18.x
+
+pipelines:
+  default:
+    - step:
+        name: Build and Test
+        caches:
+          - node
+        script:
+          - npm ci
+          - npm test
