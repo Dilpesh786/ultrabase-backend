@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+  <title>UltraBase Backend Feed</title>
+  <link>https://ultrabase-backend.onrender.com/</link>
+  <description>Latest updates and releases from UltraBase Backend</description>
+  <language>en-us</language>
+  <item>
+    <title>UltraBase v1.0.0 Released</title>
+    <link>https://ultrabase-backend.onrender.com/</link>
+    <description>Initial stable release of UltraBase backend system with full configuration.</description>
+    <pubDate>Fri, 25 Sep 2026 07:55:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>
