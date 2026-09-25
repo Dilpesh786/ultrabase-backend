@@ -1,0 +1,3 @@
+Contact: mailto:security@ultrabase.in
+Preferred-Languages: en, gu
+Canonical: https://ultrabase.in/.well-known/security.txt
