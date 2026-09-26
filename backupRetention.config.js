@@ -1,0 +1,8 @@
+module.exports = {
+  retention: {
+    daily: 7,
+    weekly: 4,
+    monthly: 12,
+    yearly: 2
+  }
+};
