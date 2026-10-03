@@ -1,0 +1,6 @@
+module.exports = {
+  heartbeat: {
+    enabled: true,
+    interval: 30000
+  }
+};
